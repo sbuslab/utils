@@ -1,4 +1,4 @@
-package com.sbuslab.common.db;
+package com.sbuslab.utils.db;
 
 import java.util.Map;
 import java.util.function.Function;

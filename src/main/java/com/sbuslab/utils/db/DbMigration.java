@@ -1,4 +1,4 @@
-package com.sbuslab.common.db;
+package com.sbuslab.utils.db;
 
 import java.util.Properties;
 

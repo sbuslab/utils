@@ -1,4 +1,4 @@
-package com.sbuslab.common.db;
+package com.sbuslab.utils.db;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.sbuslab.common.StringUtils;
+import com.sbuslab.utils.StringUtils;
 
 
 public class JacksonBeanRowMapper<T> implements RowMapper<T> {

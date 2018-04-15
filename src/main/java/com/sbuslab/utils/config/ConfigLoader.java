@@ -1,4 +1,4 @@
-package com.sbuslab.common.config;
+package com.sbuslab.utils.config;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -8,7 +8,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import lombok.extern.slf4j.Slf4j;
 
-import com.sbuslab.common.FileUtils;
+import com.sbuslab.utils.FileUtils;
 
 
 @Slf4j

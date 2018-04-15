@@ -1,4 +1,4 @@
-package com.sbuslab.common
+package com.sbuslab.utils
 
 import com.typesafe.scalalogging.Logger
 import org.slf4j.LoggerFactory

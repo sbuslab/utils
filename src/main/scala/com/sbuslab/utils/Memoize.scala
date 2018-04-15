@@ -1,4 +1,4 @@
-package com.sbuslab.common
+package com.sbuslab.utils
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}

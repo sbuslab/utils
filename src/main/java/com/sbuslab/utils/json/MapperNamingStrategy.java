@@ -1,4 +1,4 @@
-package com.sbuslab.common.json;
+package com.sbuslab.utils.json;
 
 import java.lang.reflect.Field;
 

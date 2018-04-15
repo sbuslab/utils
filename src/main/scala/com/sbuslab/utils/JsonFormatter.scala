@@ -1,4 +1,4 @@
-package com.sbuslab.common
+package com.sbuslab.utils
 
 import java.lang.reflect.{ParameterizedType, Type}
 
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
-import com.sbuslab.common.json.JsonMapperFactory
+import com.sbuslab.utils.json.JsonMapperFactory
 
 
 trait JsonFormatter {

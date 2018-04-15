@@ -1,11 +1,11 @@
-package com.sbuslab.common.db.converters;
+package com.sbuslab.utils.db.converters;
 
 import javax.persistence.AttributeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.sbuslab.common.json.JsonMapperFactory;
+import com.sbuslab.utils.json.JsonMapperFactory;
 
 
 abstract public class AbstractJsonConverter<T> implements AttributeConverter<T, String> {

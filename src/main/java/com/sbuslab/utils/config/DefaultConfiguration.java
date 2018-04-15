@@ -1,4 +1,4 @@
-package com.sbuslab.common.config;
+package com.sbuslab.utils.config;
 
 import javax.annotation.PostConstruct;
 import javax.validation.ConstraintViolation;
@@ -34,8 +34,8 @@ import org.springframework.context.annotation.Lazy;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.Future;
 
-import com.sbuslab.common.Subscribe;
-import com.sbuslab.common.json.JsonMapperFactory;
+import com.sbuslab.utils.Subscribe;
+import com.sbuslab.utils.json.JsonMapperFactory;
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.Context;
 import com.sbuslab.model.ErrorMessage;

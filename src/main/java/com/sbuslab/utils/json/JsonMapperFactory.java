@@ -1,4 +1,4 @@
-package com.sbuslab.common.json;
+package com.sbuslab.utils.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;

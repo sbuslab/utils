@@ -1,4 +1,4 @@
-package com.sbuslab.common.config;
+package com.sbuslab.utils.config;
 
 import javax.sql.DataSource;
 import java.util.Properties;
@@ -16,7 +16,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.sbuslab.common.db.DbMigration;
+import com.sbuslab.utils.db.DbMigration;
 
 
 @Configuration

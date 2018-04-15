@@ -1,4 +1,4 @@
-package com.sbuslab.common;
+package com.sbuslab.utils;
 
 
 public class StringUtils {

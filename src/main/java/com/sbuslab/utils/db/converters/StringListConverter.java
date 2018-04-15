@@ -1,4 +1,4 @@
-package com.sbuslab.common.db.converters;
+package com.sbuslab.utils.db.converters;
 
 import javax.persistence.Converter;
 import java.util.List;

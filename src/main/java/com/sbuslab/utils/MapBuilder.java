@@ -1,4 +1,4 @@
-package com.sbuslab.common;
+package com.sbuslab.utils;
 
 import java.util.HashMap;
 import java.util.Map;

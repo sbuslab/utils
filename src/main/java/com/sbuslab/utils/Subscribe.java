@@ -1,4 +1,4 @@
-package com.sbuslab.common;
+package com.sbuslab.utils;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

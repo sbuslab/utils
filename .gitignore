@@ -1,0 +1,10 @@
+*.class
+*.log
+*.jar
+
+.gradle/
+.idea/
+gradle/
+build/
+out/
+bin/

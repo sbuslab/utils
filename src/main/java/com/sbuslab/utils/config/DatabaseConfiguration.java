@@ -62,11 +62,12 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource) {
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        factory.setPackagesToScan("com.sbuslab");
 
         Properties props = new Properties();
         Config dbConfig = getDbConfig().getConfig("hibernate");
         dbConfig.entrySet().forEach(entry -> props.put(entry.getKey(), entry.getValue().unwrapped()));
+
+        factory.setPackagesToScan(getDbConfig().getStringList("packages-to-scan").stream().toArray(String[]::new));
         factory.setJpaProperties(props);
 
         factory.setDataSource(datasource);

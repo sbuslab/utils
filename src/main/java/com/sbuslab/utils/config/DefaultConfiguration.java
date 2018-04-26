@@ -87,6 +87,7 @@ public abstract class DefaultConfiguration {
             .setMaxConnections(1024)
             .setMaxConnectionsPerHost(256)
             .setRequestTimeout(30000)
+            .setReadTimeout(30000)
             .setFollowRedirect(true));
     }
 

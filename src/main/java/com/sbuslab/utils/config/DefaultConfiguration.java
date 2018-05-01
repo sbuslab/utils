@@ -16,7 +16,10 @@ import com.typesafe.config.Config;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Dsl;
+import org.asynchttpclient.proxy.ProxyServer;
+import org.asynchttpclient.proxy.ProxyType;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -34,14 +37,14 @@ import org.springframework.context.annotation.Lazy;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.Future;
 
-import com.sbuslab.utils.Subscribe;
-import com.sbuslab.utils.json.JsonMapperFactory;
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.Context;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.Transport;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
+import com.sbuslab.utils.Subscribe;
+import com.sbuslab.utils.json.JsonMapperFactory;
 
 
 @ComponentScan("com.sbuslab")
@@ -83,12 +86,22 @@ public abstract class DefaultConfiguration {
     @Lazy
     @Autowired
     public AsyncHttpClient getAsyncHttpClient(Config config) {
-        return Dsl.asyncHttpClient(Dsl.config()
-            .setMaxConnections(1024)
-            .setMaxConnectionsPerHost(256)
-            .setRequestTimeout(30000)
-            .setReadTimeout(30000)
-            .setFollowRedirect(true));
+        Config conf = config.getConfig("sbuslab.http-client");
+
+        DefaultAsyncHttpClientConfig.Builder bldr = Dsl.config()
+            .setMaxConnections(conf.getInt("max-connections"))
+            .setMaxConnectionsPerHost(conf.getInt("max-connections-per-host"))
+            .setConnectTimeout(conf.getInt("connect-timeout"))
+            .setRequestTimeout(conf.getInt("request-timeout"))
+            .setReadTimeout(conf.getInt("read-timeout"))
+            .setFollowRedirect(conf.getBoolean("follow-redirect"));
+
+        if (!conf.getString("proxy.host").isEmpty()) {
+            bldr.setProxyServer(new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
+                .setProxyType(ProxyType.HTTP));
+        }
+
+        return Dsl.asyncHttpClient(bldr);
     }
 
     @Bean

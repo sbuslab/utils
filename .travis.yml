@@ -1,18 +1,18 @@
-language: scala
-
-scala:
-  - 2.12.5
+language: java
 
 jdk:
   - oraclejdk8
 
-script: gradle test publish -Pversion="1.0.${TRAVIS_BUILD_NUMBER}" --refresh-dependencies
-
-env:
-  global:
-    secure: y26p/TsXDe3+8WkyqGoRXaRpM8bJvvZdeVpXgzIuJhR6k1z+gYiEmPiersxezKZI2mbt6Gp+1BjpQWUSHWdUm9t946VEVyqwpfqmkEWG+RB5HViwVa2ezqCvmmHgBjoFrM8FmI/HNnBKIUxlUNg4IImPjUSmW0+mSo6Dd2QLlKWxAQUjnHnuL5QklJcas1cLAN8/owaFLRjeEOK2J/QI6YdIdJTnCyc482jSDeSevrnUOZ9cGkzlFnsF8+7+LrQj5nLiGqr9ouiPr6JRpY8ES/SOs5PYp+ervF58KjW5uevns6e35R0m+neWEr9Ttkq54sC/rtN3jz8Z7yMnppH/O/OQfTYjxmdt7uLx8pg9vw31ZI+dOKFSaOUd+STRXGCviHilvKlcDjI8CuEDWZPRjiGzD2JadMu6dssBHhy3M/1W+Ol8pT5N5/Ex8++2B5yTsa7pU+pXOlEdNZIX2BKz6T0Q6iZs2LEe26yytOSTG4bBlnArbqUXAnY60qyxWe+2+/4hTWGYedRaV0K3UGcP2VNHtmqZmeJgFBBurkbLGzoe6fIzo4surI/jr0qlEensfpDn1E2TGxGlyljEiyiuJHzk4KYlZJPaaRdK+eqAOBvvZpkk1BM6MTEM/eqrVxqNGmNxmvvzIc26e45v2LQ8xpKKdkT7OjT1FKb3GaHZecg=
+script: gradle test uploadArchives closeAndReleaseRepository -Pversion="1.0.${TRAVIS_BUILD_NUMBER}"
+  --refresh-dependencies
 
 cache:
   directories:
     - "$HOME/.gradle/caches"
     - "$HOME/.gradle/wrapper"
+
+before_install:
+  - openssl aes-256-cbc -K $encrypted_1df6eab3acb5_key -iv $encrypted_1df6eab3acb5_iv
+    -in travis-secrets.tar.enc -out travis-secrets.tar -d
+
+  - tar xvf travis-secrets.tar

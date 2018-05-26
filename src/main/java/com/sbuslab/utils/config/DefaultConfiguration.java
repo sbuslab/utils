@@ -38,9 +38,9 @@ import scala.compat.java8.FutureConverters;
 import scala.concurrent.Future;
 
 import com.sbuslab.model.BadRequestError;
-import com.sbuslab.model.Context;
 import com.sbuslab.model.ErrorMessage;
-import com.sbuslab.model.Transport;
+import com.sbuslab.sbus.Context;
+import com.sbuslab.sbus.Transport;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
 import com.sbuslab.utils.Subscribe;
@@ -127,10 +127,12 @@ public abstract class DefaultConfiguration {
     public Reflections initSbusSubscriptions(ApplicationContext appContext) {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
+        String packageToScan = getConfig().getString("sbus.package-to-scan");
+
         Reflections reflections = new Reflections(
             new ConfigurationBuilder()
-                .setUrls(ClasspathHelper.forPackage("com.sbuslab"))
-                .filterInputsBy(new FilterBuilder().includePackage("com.sbuslab"))
+                .setUrls(ClasspathHelper.forPackage(packageToScan))
+                .filterInputsBy(new FilterBuilder().includePackage(packageToScan))
                 .setScanners(new MethodAnnotationsScanner()));
 
         reflections.getMethodsAnnotatedWith(Subscribe.class).forEach(method -> {

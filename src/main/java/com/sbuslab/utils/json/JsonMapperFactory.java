@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 
@@ -16,6 +17,7 @@ public class JsonMapperFactory {
     public static ObjectMapper createMapper() {
         ObjectMapper m = new ObjectMapper();
         m.registerModule(new JodaModule());
+        m.registerModule(new Jdk8Module());
         m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         m.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         m.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);

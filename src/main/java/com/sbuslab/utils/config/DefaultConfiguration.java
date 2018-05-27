@@ -35,6 +35,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Lazy;
 import scala.compat.java8.FutureConverters;
+import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 
 import com.sbuslab.model.BadRequestError;
@@ -118,8 +119,15 @@ public abstract class DefaultConfiguration {
     @Bean
     @Lazy
     @Autowired
-    public Sbus getSbus(Transport transport) {
+    public Sbus getJavaSbus(Transport transport) {
         return new Sbus(transport);
+    }
+
+    @Bean
+    @Lazy
+    @Autowired
+    public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, ExecutionContext ec) {
+        return new com.sbuslab.sbus.Sbus(transport, ec);
     }
 
     @Bean

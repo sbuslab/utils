@@ -18,7 +18,7 @@
   <logger name="org.postgresql" level="INFO"/>
   <logger name="org.flywaydb" level="INFO"/>
   <logger name="sun.rmi" level="WARN"/>
-  <logger name="com.zaxxer.hikari.pool.HikariPool" level="INFO"/>
+  <logger name="com.zaxxer.hikari" level="INFO"/>
   <logger name="springfox.documentation" level="INFO"/>
 
   <root level="TRACE">

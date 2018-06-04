@@ -32,7 +32,7 @@ public class DbMigration {
             props.put("flyway.password", conf.getString("password"));
             props.put("flyway.ignoreFutureMigrations", "true");
             props.put("flyway.baselineOnMigrate", "true");
-            props.put("flyway.outOfOrder", "true");
+            props.put("flyway.outOfOrder", "false");
 
             if (conf.hasPath("locations")) {
                 props.put("flyway.locations", conf.getString("locations"));

@@ -10,6 +10,8 @@ import scala.util.{Failure, Success}
 
 import akka.actor.ActorSystem
 
+import com.sbuslab.model.UnrecoverableError
+
 
 object FutureHelpers extends FutureHelpers {
 
@@ -74,6 +76,10 @@ trait FutureHelpers {
       }
 
     private def retryAll = PartialFunction.empty[Throwable, Boolean]
+
+    def unrecoverable: PartialFunction[Throwable, Boolean] = {
+      case _: UnrecoverableError ⇒ true
+    }
   }
 }
 

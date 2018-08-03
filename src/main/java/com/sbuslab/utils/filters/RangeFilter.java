@@ -14,7 +14,7 @@ import com.sbuslab.model.Range;
 
 @Value
 @Wither
-public class RangeFilter implements Expression {
+public class RangeFilter extends Filter {
 
     @NotNull
     private final Field field;
@@ -41,12 +41,12 @@ public class RangeFilter implements Expression {
         List<String> out = new ArrayList<>();
 
         if (value.getFrom() != null) {
-            out.add(field.getSqlColumn() + " >= :" + fromName);
+            out.add(field.getFilteringSqlColumn() + " >= :" + fromName);
             params.put(fromName, value.getFrom());
         }
 
         if (value.getTo() != null) {
-            out.add(field.getSqlColumn() + " <= :" + toName);
+            out.add(field.getFilteringSqlColumn() + " <= :" + toName);
             params.put(toName, value.getTo());
         }
 

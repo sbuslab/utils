@@ -16,7 +16,7 @@ import com.sbuslab.model.UnrecoverableError;
 @Value
 @Wither
 @AllArgsConstructor
-public class Group implements Expression {
+public class Group extends Filter {
 
     @NotNull
     private final String operand;
@@ -24,9 +24,9 @@ public class Group implements Expression {
     private final boolean negative;
 
     @NotNull
-    private final List<Expression> inner;
+    private final List<Filter> inner;
 
-    public Group(String operand, List<Expression> inner) {
+    public Group(String operand, List<Filter> inner) {
         this.operand = operand;
         this.inner = inner;
         this.negative = false;
@@ -46,7 +46,7 @@ public class Group implements Expression {
         }
 
         List<String> out = new ArrayList<>();
-        for (Expression ex : inner) {
+        for (Filter ex : inner) {
             out.add(ex.buildSql(params));
         }
 

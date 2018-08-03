@@ -1,17 +1,15 @@
 package com.sbuslab.utils.config;
 
-import javax.annotation.PostConstruct;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 import akka.actor.ActorSystem;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sbuslab.model.BadRequestError;
+import com.sbuslab.model.ErrorMessage;
+import com.sbuslab.sbus.Context;
+import com.sbuslab.sbus.Transport;
+import com.sbuslab.sbus.javadsl.Sbus;
+import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
+import com.sbuslab.utils.Subscribe;
+import com.sbuslab.utils.json.JsonMapperFactory;
 import com.typesafe.config.Config;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
@@ -38,14 +36,15 @@ import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 
-import com.sbuslab.model.BadRequestError;
-import com.sbuslab.model.ErrorMessage;
-import com.sbuslab.sbus.Context;
-import com.sbuslab.sbus.Transport;
-import com.sbuslab.sbus.javadsl.Sbus;
-import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
-import com.sbuslab.utils.Subscribe;
-import com.sbuslab.utils.json.JsonMapperFactory;
+import javax.annotation.PostConstruct;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 
 @ComponentScan("com.sbuslab")

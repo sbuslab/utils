@@ -10,7 +10,7 @@ import lombok.experimental.Wither;
 
 @Value
 @Wither
-public class ArrayFilter implements Expression {
+public class ArrayFilter extends Filter {
 
     @NotNull
     private final Field field;
@@ -19,14 +19,6 @@ public class ArrayFilter implements Expression {
     private final Collection<?> value;
 
     private final boolean negative;
-
-    public <T> ArrayFilter(@NotNull String fieldName, @NotNull Collection<?> value, @NotNull Class<T> cl, String tableName) {
-        this(new FieldFilters(cl, tableName).byName(fieldName), value, false);
-    }
-
-    public ArrayFilter(@NotNull Field field, @NotNull Collection<?> value) {
-        this(field, value, false);
-    }
 
     public ArrayFilter(@NotNull Field field, @NotNull Collection<?> value, boolean negative) {
         this.field = field;
@@ -43,12 +35,12 @@ public class ArrayFilter implements Expression {
 
         String nullable = "";
         if (value.contains(null)) {
-            nullable = field.getSqlColumn() + (isNegative() ? " IS NOT NULL AND " : " IS NULL OR ");
+            nullable = field.getFilteringSqlColumn() + (isNegative() ? " IS NOT NULL AND " : " IS NULL OR ");
         }
 
-        return nullable + field.getSqlColumn() +
+        return nullable + field.getFilteringSqlColumn() +
                (isNegative() ? " NOT" : "") +
-               " IN (:" + field.getName() + ") ";
+               " IN (" + field.getFilteringExpression() + ") ";
     }
 
     @Override

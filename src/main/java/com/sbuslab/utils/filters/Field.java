@@ -16,8 +16,10 @@ public class Field {
     @NotNull
     private final String name;
 
+    private final String selectableSqlColumn;
+
     @NotNull
-    private final String sqlColumn;
+    private final String filteringSqlColumn;
 
     @NotNull
     private final Class<?> filterType;
@@ -30,14 +32,27 @@ public class Field {
 
     private Method enumParserMethod;
 
+    private String filteringExpression;
 
-    public Field(@NotNull String name, @NotNull String sqlColumn, @NotNull Class<?> filterType, Method method) {
+    private Boolean isSelectable;
+
+
+    public Field(@NotNull String name,
+                 @NotNull String selectableSqlColumn,
+                 String filteringSqlColumn,
+                 @NotNull Class<?> filterType,
+                 Method method,
+                 String filteringExpression,
+                 @NotNull Boolean isSelectable) {
         this.name = name;
-        this.sqlColumn = sqlColumn;
+        this.selectableSqlColumn = selectableSqlColumn;
+        this.filteringSqlColumn = filteringSqlColumn;
         this.filterType = filterType;
         this.method = method;
         this.isLong = filterType.equals(Long.TYPE) || filterType.equals(Integer.TYPE);
         this.isString = filterType.equals(String.class);
+        this.filteringExpression = filteringExpression;
+        this.isSelectable = isSelectable;
 
         Method enumParserMethod = null;
         if (SqlTypeValue.class.isAssignableFrom(filterType)) {

@@ -1,12 +1,23 @@
 package com.sbuslab.utils.config;
 
 import javax.sql.DataSource;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
+import com.sbuslab.utils.db.EntitiesSqlFields;
+import com.sbuslab.utils.db.WithQueryBuilder;
 import com.typesafe.config.Config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.reflections.Reflections;
+import org.reflections.scanners.MethodAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -47,6 +58,29 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         hk.addDataSourceProperty("stringtype", "unspecified"); // it is needed to be able to store string values as jsonb
 
         return new HikariDataSource(hk);
+    }
+
+    @Bean
+    @Autowired
+    public Reflections initDbQueryBuilders(ApplicationContext appContext) {
+        List<String> packages = getDbConfig().getStringList("packages-to-scan");
+        List<URL> urls = new ArrayList<>();
+        packages.forEach(p -> urls.addAll(ClasspathHelper.forPackage(p)));
+
+        Reflections reflections = new Reflections(
+            new ConfigurationBuilder()
+                .setUrls(urls)
+                .filterInputsBy(new FilterBuilder().includePackage(packages.toArray(new String[0])))
+                .setScanners(new MethodAnnotationsScanner()));
+
+        EntitiesSqlFields esf = appContext.getBean(EntitiesSqlFields.class);
+        reflections.getMethodsAnnotatedWith(WithQueryBuilder.class).forEach(method -> {
+            WithQueryBuilder ann = method.getAnnotation(WithQueryBuilder.class);
+            String parentName = method.getDeclaringClass().getCanonicalName();
+            String fullMethodName = parentName + "." + method.getName();
+            esf.addSqlFieldsForType(fullMethodName, ann.entityClass());
+        });
+        return reflections;
     }
 
     @Bean

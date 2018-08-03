@@ -9,7 +9,7 @@ import lombok.experimental.Wither;
 
 @Value
 @Wither
-public class NullFilter implements Expression {
+public class NullFilter extends Filter {
 
     @NotNull
     private final Field field;
@@ -26,7 +26,7 @@ public class NullFilter implements Expression {
     }
 
     public String buildSql(Map<String, Object> params) {
-        return field.getSqlColumn() + (isNegative() ? " IS NOT NULL" : " IS NULL");
+        return field.getFilteringSqlColumn() + (isNegative() ? " IS NOT NULL" : " IS NULL");
     }
 
     @Override

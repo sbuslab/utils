@@ -1,11 +1,12 @@
 package com.sbuslab.utils.db;
 
-import com.sbuslab.model.Paging;
-import com.sbuslab.model.Sorting;
-import org.springframework.jdbc.core.RowMapper;
-
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.jdbc.core.RowMapper;
+
+import com.sbuslab.model.Paging;
+import com.sbuslab.model.Sorting;
 
 public interface QueryBuilder {
 

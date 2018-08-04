@@ -2,7 +2,6 @@ package com.sbuslab.utils.db.converters;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
-
 import scala.math.BigDecimal;
 
 

@@ -1,6 +1,7 @@
 package com.sbuslab.utils.filters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.sbuslab.utils.db.EntitySqlFields;
 
 public interface CustomFilterBuilder {

@@ -1,9 +1,10 @@
 package com.sbuslab.utils.db;
 
-import com.sbuslab.model.Paging;
-import com.sbuslab.model.Sorting;
-import com.sbuslab.utils.filters.Filter;
-import com.sbuslab.utils.filters.Group;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.RowMapper;
@@ -11,10 +12,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.sbuslab.model.Paging;
+import com.sbuslab.model.Sorting;
+import com.sbuslab.utils.filters.Filter;
+import com.sbuslab.utils.filters.Group;
 
 @Component
 public class DefaultQueryBuilder extends QueryLogging implements QueryBuilder {

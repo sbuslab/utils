@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import com.sbuslab.utils.db.EntitiesSqlFields;
-import com.sbuslab.utils.db.WithQueryBuilder;
 import com.typesafe.config.Config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -28,6 +26,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.sbuslab.utils.db.DbMigration;
+import com.sbuslab.utils.db.EntitiesSqlFields;
+import com.sbuslab.utils.db.WithQueryBuilder;
 
 
 @Configuration

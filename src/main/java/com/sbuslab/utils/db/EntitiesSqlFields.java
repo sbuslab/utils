@@ -1,11 +1,5 @@
 package com.sbuslab.utils.db;
 
-import com.sbuslab.model.Searchable;
-import com.sbuslab.utils.StringUtils;
-import com.sbuslab.utils.filters.Field;
-import lombok.Data;
-import org.springframework.stereotype.Component;
-
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.lang.reflect.Method;
@@ -13,8 +7,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
+import lombok.Data;
+import org.springframework.stereotype.Component;
+
+import com.sbuslab.model.Searchable;
+import com.sbuslab.utils.StringUtils;
+import com.sbuslab.utils.filters.Field;
+
+
 @Data
+@Component
 public class EntitiesSqlFields {
     private Map<String, EntitySqlFields> sqlFieldsByCallerMethods = new ConcurrentHashMap<>();
 
@@ -29,7 +31,7 @@ public class EntitiesSqlFields {
     private EntitySqlFields createEntitySqlFields(Class<?> cl) {
         Map<String, Field> fieldsByName = new HashMap<>();
         Map<String, Field> fieldsBySqlColumn = new HashMap<>();
-        String allSqlColumns;
+
         String tableName = cl.getAnnotation(Table.class).name();
 
         for (java.lang.reflect.Field f : cl.getDeclaredFields()) {
@@ -72,7 +74,7 @@ public class EntitiesSqlFields {
             }
         }
 
-        allSqlColumns = String.join(", ", fieldsBySqlColumn.keySet());
+        String allSqlColumns = String.join(", ", fieldsBySqlColumn.keySet());
 
         return new EntitySqlFields(fieldsByName, fieldsBySqlColumn, allSqlColumns, tableName, cl.getSimpleName());
     }

@@ -1,11 +1,12 @@
 package com.sbuslab.utils.db;
 
-import com.sbuslab.utils.filters.Field;
+import java.util.HashMap;
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.sbuslab.utils.filters.Field;
 
 @Data
 @AllArgsConstructor

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
+import net.spy.memcached.*;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Dsl;
@@ -103,6 +105,25 @@ public abstract class DefaultConfiguration {
         }
 
         return Dsl.asyncHttpClient(bldr);
+    }
+
+    @Bean
+    @Lazy
+    @Autowired
+    public MemcachedClient getMemcachedClient(Config config) throws IOException {
+        Config conf = config.getConfig("sbuslab.memcache");
+
+        ConnectionFactoryBuilder builder = new ConnectionFactoryBuilder()
+            .setDaemon(true)
+            .setShouldOptimize(true)
+            .setFailureMode(FailureMode.Redistribute)
+            .setHashAlg(DefaultHashAlgorithm.KETAMA_HASH)
+            .setLocatorType(ConnectionFactoryBuilder.Locator.CONSISTENT)
+            .setOpTimeout(conf.getDuration("timeout", TimeUnit.MILLISECONDS))
+            .setMaxReconnectDelay(conf.getDuration("max-reconnect-delay", TimeUnit.SECONDS))
+            .setProtocol(ConnectionFactoryBuilder.Protocol.BINARY);
+
+        return new MemcachedClient(builder.build(), AddrUtil.getAddresses(conf.getStringList("hosts")));
     }
 
     @Bean

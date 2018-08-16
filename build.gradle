@@ -107,6 +107,8 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.2.3'
     runtime 'net.logstash.logback:logstash-logback-encoder:5.0'
 
+    compile 'net.spy:spymemcached:2.12.3'
+
     compile 'io.prometheus:simpleclient_hotspot:0.3.0'
     compile 'io.prometheus:simpleclient_httpserver:0.3.0'
 }

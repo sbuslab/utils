@@ -24,6 +24,7 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sbuslab.utils.db.DbMigration;
 import com.sbuslab.utils.db.EntitiesSqlFields;
@@ -116,5 +117,11 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         JpaTransactionManager txManager = new JpaTransactionManager();
         txManager.setEntityManagerFactory(entityManagerFactory(datasource).getObject());
         return txManager;
+    }
+
+    @Bean
+    @Autowired
+    public TransactionTemplate transactionTemplate(PlatformTransactionManager ptm) {
+        return new TransactionTemplate(ptm);
     }
 }

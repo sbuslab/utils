@@ -18,6 +18,7 @@ public class JsonMapperFactory {
         ObjectMapper m = new ObjectMapper();
         m.registerModule(new JodaModule());
         m.registerModule(new Jdk8Module());
+        m.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
         m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         m.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         m.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);

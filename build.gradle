@@ -101,7 +101,7 @@ dependencies {
 
     compile 'org.postgresql:postgresql:42.2.2'
 
-    compile 'org.asynchttpclient:async-http-client:2.4.5'
+    compile 'org.asynchttpclient:async-http-client:2.5.3'
 
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-classic:1.2.3'

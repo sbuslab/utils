@@ -8,18 +8,23 @@ import scala.util.Failure
 
 trait Memoize {
 
-  case class CachedObject(expiredAt: Long, obj: Future[Any])
+  case class CachedObject(expiredAt: Long, obj: Any)
 
-  val cache = new ConcurrentHashMap[String, CachedObject]()
+  private val cache = new ConcurrentHashMap[String, CachedObject]()
 
-  def memoize[T](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit e: ExecutionContext): Future[T] =
+  def memoize[T](key: String, timeout: Duration)(f: ⇒ T)(implicit e: ExecutionContext): T =
     cache.compute(key, (_, exist) ⇒ {
       if (exist == null || exist.expiredAt < System.currentTimeMillis()) {
-        CachedObject(System.currentTimeMillis() + timeout.toMillis, f andThen {
-          case _: Failure[_] ⇒ cache.remove(key)
-        })
+        val result = f
+
+        result match {
+          case f: Future[_] ⇒ f andThen { case _: Failure[_] ⇒ cache.remove(key) }
+          case _ ⇒
+        }
+
+        CachedObject(System.currentTimeMillis() + timeout.toMillis, result)
       } else {
         exist
       }
-    }).obj.asInstanceOf[Future[T]]
+    }).obj.asInstanceOf[T]
 }

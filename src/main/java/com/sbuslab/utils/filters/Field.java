@@ -11,7 +11,7 @@ import com.sbuslab.model.ErrorMessage;
 
 
 @Value
-public class Field {
+final public class Field {
 
     @NotNull
     private final String name;
@@ -36,6 +36,7 @@ public class Field {
 
     private Boolean isSelectable;
 
+    private CustomFilterBuilder customFilterBuilder;
 
     public Field(@NotNull String name,
                  @NotNull String selectableSqlColumn,
@@ -43,7 +44,8 @@ public class Field {
                  @NotNull Class<?> filterType,
                  Method method,
                  String filteringExpression,
-                 @NotNull Boolean isSelectable) {
+                 @NotNull Boolean isSelectable,
+                 CustomFilterBuilder customFilterBuilder) {
         this.name = name;
         this.selectableSqlColumn = selectableSqlColumn;
         this.filteringSqlColumn = filteringSqlColumn;
@@ -53,6 +55,7 @@ public class Field {
         this.isString = filterType.equals(String.class);
         this.filteringExpression = filteringExpression;
         this.isSelectable = isSelectable;
+        this.customFilterBuilder = customFilterBuilder;
 
         Method enumParserMethod = null;
         if (SqlTypeValue.class.isAssignableFrom(filterType)) {

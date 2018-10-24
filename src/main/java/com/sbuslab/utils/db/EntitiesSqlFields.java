@@ -12,7 +12,9 @@ import org.springframework.stereotype.Component;
 
 import com.sbuslab.model.Searchable;
 import com.sbuslab.utils.StringUtils;
+import com.sbuslab.utils.filters.CustomFilterBuilder;
 import com.sbuslab.utils.filters.Field;
+import com.sbuslab.utils.filters.RawSqlFilter;
 
 
 @Data
@@ -55,6 +57,11 @@ public class EntitiesSqlFields {
                     filteringSqlColumnName = searchableAnn.matchAgainstColumn();
                 }
 
+                CustomFilterBuilder customFilterBuilder = null;
+                if (searchableAnn != null && searchableAnn.rawSql()) {
+                    customFilterBuilder = new RawSqlFilter.Builder(searchableAnn.query());
+                }
+
                 String filteringExpression = searchableAnn == null ? ":" + f.getName() : searchableAnn.query();
 
                 Field field = new Field(
@@ -64,7 +71,9 @@ public class EntitiesSqlFields {
                     f.getType(),
                     method,
                     filteringExpression,
-                    selectable);
+                    selectable,
+                    customFilterBuilder
+                );
 
                 fieldsByName.put(field.getName(), field);
 

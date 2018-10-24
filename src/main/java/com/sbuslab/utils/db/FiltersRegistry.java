@@ -57,6 +57,10 @@ public class FiltersRegistry {
             return new NullFilter(field);
         }
 
+        if (field.getCustomFilterBuilder() != null) {
+            return field.getCustomFilterBuilder().createFilter(filterName, value, esf, objectMapper);
+        }
+
         if (value instanceof Map || value instanceof scala.collection.Map || value instanceof Range) {
             return new RangeFilter(field, objectMapper.convertValue(value, Range.class));
         }

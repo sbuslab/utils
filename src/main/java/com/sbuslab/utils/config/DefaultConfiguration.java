@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 
 import akka.actor.ActorSystem;
+import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import io.prometheus.client.exporter.HTTPServer;
@@ -30,7 +31,6 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ import com.sbuslab.utils.json.JsonMapperFactory;
 @EnableAspectJAutoProxy
 public abstract class DefaultConfiguration {
 
-    protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
+    protected static final org.slf4j.Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
 
     private final Config config = ConfigLoader.load();
 
@@ -83,6 +83,17 @@ public abstract class DefaultConfiguration {
                 log.error("Error on start prometheus HTTPServer: " + e.getMessage(), e);
             }
         }
+    }
+
+    @PostConstruct
+    public void reconfigureLoggers() {
+        getConfig().getObject("sbuslab.loggers").forEach((key, value) -> {
+            org.slf4j.Logger logger = LoggerFactory.getLogger(key);
+
+            if (logger instanceof ch.qos.logback.classic.Logger) {
+                ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(value.atPath("/").getString("/"), Level.INFO));
+            }
+        });
     }
 
     @Bean

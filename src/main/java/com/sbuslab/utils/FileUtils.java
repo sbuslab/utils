@@ -27,7 +27,7 @@ public class FileUtils {
      */
     public static URL getFileUrl(String location) throws FileNotFoundException {
         URL url = null;
-        if (!location.isEmpty()) {
+        if (location != null && !location.isEmpty()) {
             if (location.startsWith(CLASSPATH_PREFIX)) {
                 location = location.substring(CLASSPATH_PREFIX.length());
                 if (location.startsWith(File.separator)) {

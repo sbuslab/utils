@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 
@@ -33,6 +34,7 @@ public class JsonMapperFactory {
         m.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         m.setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
         m.setPropertyNamingStrategy(new MapperNamingStrategy());
+        m.setNodeFactory(JsonNodeFactory.withExactBigDecimals(true));
         return m;
     }
 }

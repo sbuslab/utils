@@ -27,30 +27,29 @@ public class FileUtils {
      */
     public static URL getFileUrl(String location) throws FileNotFoundException {
         URL url = null;
-        if (location.startsWith(CLASSPATH_PREFIX)) {
-            location = location.substring(CLASSPATH_PREFIX.length());
-
-            if (location.startsWith(File.separator)) {
-                location = location.substring(1);
-            }
-            url = getDefaultClassLoader().getResource(location);
-        } else if (location.startsWith(File.separator)
-                || (System.getProperty("os.name").contains("Windows") && location.charAt(1) == ':')) {
-            try {
-                url = new URL(location);
-            } catch (MalformedURLException e) {
-                // No URL -> resolve as resource path.
-                try {
-                    return new File(location).toURI().toURL();
-
-                } catch (MalformedURLException ex) {
-                    throw new IllegalArgumentException(e.getMessage(), e);
+        if (location != null && !location.isEmpty()) {
+            if (location.startsWith(CLASSPATH_PREFIX)) {
+                location = location.substring(CLASSPATH_PREFIX.length());
+                if (location.startsWith(File.separator)) {
+                    location = location.substring(1);
                 }
+                url = getDefaultClassLoader().getResource(location);
+            } else if (location.startsWith(File.separator)
+                    || (System.getProperty("os.name").contains("Windows") && location.charAt(1) == ':')) {
+                try {
+                    url = new URL(location);
+                } catch (MalformedURLException e) {
+                    // No URL -> resolve as resource path.
+                    try {
+                        return new File(location).toURI().toURL();
+                    } catch (MalformedURLException ex) {
+                        throw new IllegalArgumentException(e.getMessage(), e);
+                    }
+                }
+            } else {
+                url = getDefaultClassLoader().getResource(location);
             }
-        } else {
-            url = getDefaultClassLoader().getResource(location);
         }
-
         if (url == null) {
             throw new FileNotFoundException("File does not exist: " + location);
         }

@@ -48,7 +48,8 @@ public class DbMigration {
             log.info("[" + flyway.migrate() + "] migrations are applied");
 
         } catch (FlywayException ex) {
-            throw new RuntimeException("Exception during database migrations: ", ex);
+            log.error("Migrations error: " + ex.getMessage());
+            throw new RuntimeException("Exception during database migrations: " + ex.getMessage(), ex);
         }
     }
 }

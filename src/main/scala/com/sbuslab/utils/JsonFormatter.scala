@@ -4,6 +4,7 @@ import java.lang.reflect.{ParameterizedType, Type}
 
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind._
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 import com.sbuslab.utils.json.JsonMapperFactory
@@ -43,6 +44,10 @@ trait JsonFormatter {
         def getOwnerType = null
       }
     }
+
+  implicit class ToObjectNode(map: Map[String, Any]) {
+    def toObjectNode = JsonFormatter.mapper.convertValue(map, typeReference[ObjectNode])
+  }
 }
 
 

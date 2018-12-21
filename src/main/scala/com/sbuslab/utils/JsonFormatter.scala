@@ -46,7 +46,7 @@ trait JsonFormatter {
     }
 
   implicit class ToObjectNode(map: Map[String, Any]) {
-    def toObjectNode = JsonFormatter.mapper.convertValue(map, typeReference[ObjectNode])
+    def toObjectNode = JsonFormatter.mapper.convertValue(map, classOf[ObjectNode])
   }
 }
 

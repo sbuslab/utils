@@ -2,15 +2,15 @@ package com.sbuslab.utils
 
 import scala.language.higherKinds
 
-import scala.collection.mutable
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor.ActorSystem
 
-import com.sbuslab.model.UnrecoverableError
+import com.sbuslab.model.UnrecoverableFailures
 
 
 object FutureHelpers extends FutureHelpers {
@@ -41,15 +41,15 @@ trait FutureHelpers {
 
   object Retry {
 
-    def max[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = retryAll)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
+    def max[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
       expBackOff(maxAttempts, noRetry)(f)
     }
 
-    def expBackOff[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = retryAll)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
+    def expBackOff[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
       retryImpl(1, maxAttempts, noRetry, expBackOffDelay, f)
     }
 
-    def linear[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = retryAll, delay: FiniteDuration = 0 millis)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
+    def linear[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable, delay: FiniteDuration = 0.millis)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
       retryImpl(1, maxAttempts, noRetry, _ ⇒ delay, f)
     }
 
@@ -75,10 +75,10 @@ trait FutureHelpers {
         p.future
       }
 
-    private def retryAll = PartialFunction.empty[Throwable, Boolean]
+    def retryAll = PartialFunction.empty[Throwable, Boolean]
 
     def unrecoverable: PartialFunction[Throwable, Boolean] = {
-      case _: UnrecoverableError ⇒ true
+      case e: Throwable ⇒ UnrecoverableFailures.contains(e)
     }
   }
 }

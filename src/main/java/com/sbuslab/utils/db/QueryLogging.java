@@ -1,6 +1,7 @@
 package com.sbuslab.utils.db;
 
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.prometheus.client.Histogram;
@@ -24,11 +25,15 @@ public abstract class QueryLogging {
     }
 
     protected <T> T logged(String name, String sql, Map<String, Object> params, Function<String, T> func) {
+        return logged(name, sql, params, (sql2, ignored) -> func.apply(sql2));
+    }
+
+    protected <T> T logged(String name, String sql, Map<String, Object> params, BiFunction<String, Map<String, Object>, T> func) {
         int space = name.indexOf(" ");
         Histogram.Timer timer = sqlQueriesStat.labels(space == -1 ? name : name.substring(0, space)).startTimer();
 
         try {
-            T result = func.apply(sql);
+            T result = func.apply(sql, params);
 
             double spent = timer.observeDuration();
 

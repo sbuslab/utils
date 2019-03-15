@@ -42,6 +42,7 @@ import org.springframework.context.annotation.Lazy;
 
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
+import com.sbuslab.model.scheduler.ScheduleCommand;
 import com.sbuslab.sbus.Context;
 import com.sbuslab.sbus.Transport;
 import com.sbuslab.sbus.javadsl.Sbus;
@@ -240,6 +241,13 @@ public abstract class DefaultConfiguration {
                         }
                     });
                 });
+
+                if (ann.repeatEvery() > 0) {
+                    sbus.command("scheduler.schedule", ScheduleCommand.builder()
+                      .period(ann.repeatEvery())
+                      .routingKey(routingKey)
+                      .build());
+                }
             }
         });
 

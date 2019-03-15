@@ -9,6 +9,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Subscribe {
+
     String value() default "";
+
     String[] values() default {};
+
+    long repeatEvery() default 0;
 }

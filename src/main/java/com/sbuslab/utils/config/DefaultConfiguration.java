@@ -47,6 +47,7 @@ import com.sbuslab.sbus.Context;
 import com.sbuslab.sbus.Transport;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
+import com.sbuslab.utils.Schedule;
 import com.sbuslab.utils.Subscribe;
 import com.sbuslab.utils.json.JsonMapperFactory;
 
@@ -242,9 +243,11 @@ public abstract class DefaultConfiguration {
                     });
                 });
 
-                if (ann.repeatEvery() > 0) {
+                if (method.isAnnotationPresent(Schedule.class)) {
+                    Schedule schedule = method.getAnnotation(Schedule.class);
+
                     sbus.command("scheduler.schedule", ScheduleCommand.builder()
-                      .period(ann.repeatEvery())
+                      .period(scala.concurrent.duration.FiniteDuration.apply(schedule.value()).toMillis())
                       .routingKey(routingKey)
                       .build());
                 }

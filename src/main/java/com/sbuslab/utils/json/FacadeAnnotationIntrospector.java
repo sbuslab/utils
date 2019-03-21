@@ -2,7 +2,9 @@ package com.sbuslab.utils.json;
 
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+
 import com.sbuslab.model.FacadeIgnore;
+
 
 public class FacadeAnnotationIntrospector extends JacksonAnnotationIntrospector {
 

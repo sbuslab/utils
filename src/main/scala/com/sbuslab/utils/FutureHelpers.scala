@@ -20,6 +20,27 @@ object FutureHelpers extends FutureHelpers {
       for (result ← fr; r ← f(a)) yield result += r
     } map (_.result())
 
+
+  /**
+   * Executes series of batches of Futures those are executing in parallel.
+   * By default batch size is equals to 5%  of size of incoming sequence.
+   *
+   * @param in
+   * @param f
+   * @param batchSize
+   * @param ec
+   * @tparam A
+   * @tparam B
+   * @return
+   */
+  def serialInParallelBatch[A, B](in: Seq[A])(batchSize: Int = (in.size * 0.05).toInt)(f: A ⇒ Future[B])
+    (implicit ec: ExecutionContext): Future[Seq[B]] = {
+    in.grouped(batchSize).foldLeft(Future.successful(Seq.newBuilder[B])) { case (builder, group) ⇒
+      builder.flatMap(rs ⇒ Future.sequence(group.map(f(_))).map(values ⇒ rs.++=(values)))
+    } map (_.result())
+  }
+
+
   def collectWhile[A, B, M[X] <: Seq[X]](in: M[Future[A]])(pf: PartialFunction[A, B])(implicit cbf: CanBuildFrom[M[Future[A]], B, M[B]], ec: ExecutionContext): Future[M[B]] =
     collectWhileImpl(in, pf, cbf(in)).map(_.result())
 

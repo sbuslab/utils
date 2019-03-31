@@ -28,7 +28,7 @@ public abstract class QueryLogging {
         return logged(name, sql, params, (sql2, ignored) -> func.apply(sql2));
     }
 
-    protected <T> T logged(String name, String sql, Map<String, Object> params, BiFunction<String, Map<String, Object>, T> func) {
+    protected <T> T logged(String name, String sql, Map<String, ?> params, BiFunction<String, Map<String, ?>, T> func) {
         int space = name.indexOf(" ");
         Histogram.Timer timer = sqlQueriesStat.labels(space == -1 ? name : name.substring(0, space)).startTimer();
 

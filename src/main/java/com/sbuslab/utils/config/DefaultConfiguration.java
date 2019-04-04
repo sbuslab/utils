@@ -239,6 +239,8 @@ public abstract class DefaultConfiguration {
                             } else {
                                 throw new RuntimeException(cause != null ? cause : e);
                             }
+                        } finally {
+                            MDC.remove("correlation_id");
                         }
                     });
                 });

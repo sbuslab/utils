@@ -229,7 +229,6 @@ public abstract class DefaultConfiguration {
 
                     return CompletableFuture.supplyAsync(() -> {
                         try {
-                            MDC.put("correlation_id", ctx.correlationId());
                             return method.invoke(parent, req, ctx);
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             Throwable cause = e.getCause();
@@ -239,8 +238,6 @@ public abstract class DefaultConfiguration {
                             } else {
                                 throw new RuntimeException(cause != null ? cause : e);
                             }
-                        } finally {
-                            MDC.remove("correlation_id");
                         }
                     });
                 });

@@ -7,6 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
 
@@ -37,10 +38,26 @@ public class Digest {
     }
 
     public static String hMacSHA256(final String message, final String key) throws InvalidKeyException, NoSuchAlgorithmException {
-        final Mac hmac = Mac.getInstance("HmacSHA256");
-        hmac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return hex(hmac("HmacSHA256", message, key));
+    }
 
-        return new String(Hex.encodeHex(hmac.doFinal(message.getBytes(StandardCharsets.UTF_8))));
+    public static byte[] hmac(final String algorithm, final String message, final String key) throws InvalidKeyException, NoSuchAlgorithmException {
+        final Mac hmac = Mac.getInstance(algorithm);
+        hmac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm));
+
+        return hmac.doFinal(message.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String hex(final byte[] data) {
+        return Hex.encodeHexString(data);
+    }
+
+    public static String encodeBase64(final byte[] data) {
+        return Base64.encodeBase64String(data);
+    }
+
+    public static byte[] decodeBase64(final String data) {
+        return Base64.decodeBase64(data);
     }
 
     private static String digest(String digestName, byte[] message) {

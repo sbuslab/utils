@@ -26,6 +26,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.sbuslab.utils.db.JdbcUtils;
 import com.sbuslab.utils.db.DbMigration;
 import com.sbuslab.utils.db.EntitiesSqlFields;
 import com.sbuslab.utils.db.WithQueryBuilder;
@@ -102,7 +103,7 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         Config dbConfig = getDbConfig().getConfig("hibernate");
         dbConfig.entrySet().forEach(entry -> props.put(entry.getKey(), entry.getValue().unwrapped()));
 
-        factory.setPackagesToScan(getDbConfig().getStringList("packages-to-scan").stream().toArray(String[]::new));
+        factory.setPackagesToScan(getDbConfig().getStringList("packages-to-scan").toArray(new String[0]));
         factory.setJpaProperties(props);
 
         factory.setDataSource(datasource);
@@ -117,6 +118,13 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         JpaTransactionManager txManager = new JpaTransactionManager();
         txManager.setEntityManagerFactory(entityManagerFactory(datasource).getObject());
         return txManager;
+    }
+
+    @Bean
+    @Autowired
+    @DependsOn("dbMigrations")
+    public JdbcUtils jdbcUtils(DataSource datasource) {
+        return new JdbcUtils(datasource);
     }
 
     @Bean

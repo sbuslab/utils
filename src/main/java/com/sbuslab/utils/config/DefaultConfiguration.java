@@ -6,6 +6,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,6 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -194,7 +194,11 @@ public abstract class DefaultConfiguration {
             for (String routingKey : routingKeys) {
                 sbus.on(routingKey, method.getParameterTypes()[0], (req, ctx) -> {
                     if (req != null) {
-                        Set<? extends ConstraintViolation<?>> errors = validator.validate(req);
+                        Set<? extends ConstraintViolation<?>> errors = new HashSet<>();
+
+                        try {
+                            errors = validator.validate(req);
+                        } catch (ArrayIndexOutOfBoundsException ignored) {}
 
                         if (!errors.isEmpty()) {
                             BadRequestError ex = new BadRequestError(errors.stream().map(e ->

@@ -1,11 +1,14 @@
 package com.sbuslab.utils;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -110,6 +113,47 @@ public class Digest {
         }
     }
 
+    public static GeneratedKeys generateRsaKeyPair() {
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(4096, new SecureRandom());
+            KeyPair pair = generator.generateKeyPair();
+
+            return new GeneratedKeys(
+                java.util.Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()),
+                java.util.Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded())
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String encryptRsa(String text, String publicKeyString) {
+        try {
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKeyString)));
+
+            Cipher encryptCipher = Cipher.getInstance("RSA");
+            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] cipherText = encryptCipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
+            return  java.util.Base64.getEncoder().encodeToString(cipherText);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String decryptRsa(String cipherText, String privateKeyString) throws Exception {
+        try {
+            PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(privateKeyString)));
+
+            Cipher decryptCipher = Cipher.getInstance("RSA");
+            decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+            return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(cipherText)), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static String digest(String digestName, byte[] message) {
         try {
             return toHexString(MessageDigest.getInstance(digestName).digest(message));
@@ -179,5 +223,22 @@ public class Digest {
         }
     }
 
+    public static class GeneratedKeys {
+        private String publicKey;
+        private String privateKey;
+
+        public GeneratedKeys(String pbKey, String pvKey) {
+            publicKey = pbKey;
+            privateKey = pvKey;
+        }
+
+        public String getPublicKey() {
+            return publicKey;
+        }
+
+        public String getPrivateKey() {
+            return privateKey;
+        }
+    }
 
 }

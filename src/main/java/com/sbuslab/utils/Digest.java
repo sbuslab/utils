@@ -116,7 +116,7 @@ public class Digest {
     public static GeneratedKeys generateRsaKeyPair() {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-            generator.initialize(4096, new SecureRandom());
+            generator.initialize(2048, new SecureRandom());
             KeyPair pair = generator.generateKeyPair();
 
             return new GeneratedKeys(
@@ -128,7 +128,7 @@ public class Digest {
         }
     }
 
-    public static String encryptRsa(String text, String publicKeyString) {
+    public static String encryptRsa(String publicKeyString, String text) {
         try {
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKeyString)));
 
@@ -141,14 +141,14 @@ public class Digest {
         }
     }
 
-    public static String decryptRsa(String cipherText, String privateKeyString) throws Exception {
+    public static String decryptRsa(String privateKeyString, String text) throws Exception {
         try {
             PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(privateKeyString)));
 
             Cipher decryptCipher = Cipher.getInstance("RSA");
             decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
 
-            return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(cipherText)), StandardCharsets.UTF_8);
+            return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(text)), StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

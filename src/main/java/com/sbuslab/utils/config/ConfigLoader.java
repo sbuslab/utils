@@ -3,6 +3,7 @@ package com.sbuslab.utils.config;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -18,6 +19,20 @@ public class ConfigLoader {
         String configPaths = System.getProperty("config.localfile", "")
             .replace("/", File.separator)
             .replace("\\", File.separator);
+
+        try {
+            String secretsUrl = System.getenv("SECRET_CONFIG_URL");
+
+            if (secretsUrl != null && !secretsUrl.isEmpty()) {
+                Config secrets = ConfigFactory.parseURL(new URL(secretsUrl));
+
+                secrets.entrySet().forEach(entry ->
+                    System.setProperty("SECRET_" + entry.getKey().toUpperCase().replaceAll("[^A-Z0-9]+", "_"), entry.getValue().unwrapped().toString())
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Error on load configs from url " + System.getenv("SECRET_CONFIG_URL") + ": " + e.getMessage(), e);
+        }
 
         Config resultConfig = ConfigFactory.load();
 

@@ -1,10 +1,9 @@
 package com.sbuslab.utils.db;
 
-import java.util.Properties;
-
 import com.typesafe.config.Config;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,25 +24,25 @@ public class DbMigration {
 
             Config conf = config.hasPath("migrations") ? config.getConfig("migrations").withFallback(config) : config;
 
-            Properties props = new Properties();
-            props.put("flyway.driver", conf.getString("driverClassName"));
-            props.put("flyway.url", String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), conf.getInt("port"), conf.getString("db")));
-            props.put("flyway.user", conf.getString("username"));
-            props.put("flyway.password", conf.getString("password"));
-            props.put("flyway.ignoreFutureMigrations", "true");
-            props.put("flyway.baselineOnMigrate", "true");
-            props.put("flyway.outOfOrder", "false");
+            FluentConfiguration flywayConf = Flyway.configure()
+                .dataSource(
+                    String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), conf.getInt("port"), conf.getString("db")),
+                    conf.getString("username"),
+                    conf.getString("password")
+                )
+                .ignoreFutureMigrations(true)
+                .baselineOnMigrate(true)
+                .outOfOrder(false);
 
             if (conf.hasPath("locations")) {
-                props.put("flyway.locations", conf.getString("locations"));
+                flywayConf.locations(conf.getString("locations"));
             }
 
             if (conf.hasPath("table")) {
-                props.put("flyway.table", conf.getString("table"));
+                flywayConf.table(conf.getString("table"));
             }
 
-            Flyway flyway = new Flyway();
-            flyway.configure(props);
+            Flyway flyway = flywayConf.load();
 
             log.info("[" + flyway.migrate() + "] migrations are applied");
 

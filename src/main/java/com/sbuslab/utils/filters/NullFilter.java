@@ -3,12 +3,14 @@ package com.sbuslab.utils.filters;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 
+import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 
+@With
 @Value
-@Wither
+@EqualsAndHashCode(callSuper = true)
 public class NullFilter extends Filter {
 
     @NotNull

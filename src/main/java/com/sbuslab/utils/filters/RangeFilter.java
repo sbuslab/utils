@@ -6,14 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 import com.sbuslab.model.Range;
 
 
+@With
 @Value
-@Wither
+@EqualsAndHashCode(callSuper = true)
 public class RangeFilter extends Filter {
 
     @NotNull

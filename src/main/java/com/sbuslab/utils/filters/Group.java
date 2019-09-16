@@ -6,15 +6,17 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 import org.springframework.util.CollectionUtils;
 
 import com.sbuslab.model.UnrecoverableError;
 
 
+@With
 @Value
-@Wither
+@EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 public class Group extends Filter {
 

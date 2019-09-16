@@ -4,12 +4,14 @@ import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Map;
 
+import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 
+@With
 @Value
-@Wither
+@EqualsAndHashCode(callSuper = true)
 public class ArrayFilter extends Filter {
 
     @NotNull

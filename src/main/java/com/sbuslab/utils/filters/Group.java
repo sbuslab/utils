@@ -8,13 +8,13 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.With;
+import lombok.experimental.Wither;
 import org.springframework.util.CollectionUtils;
 
 import com.sbuslab.model.UnrecoverableError;
 
 
-@With
+@Wither
 @Value
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor

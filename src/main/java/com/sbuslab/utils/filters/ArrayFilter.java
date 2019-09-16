@@ -6,10 +6,9 @@ import java.util.Map;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.With;
+import lombok.experimental.Wither;
 
-
-@With
+@Wither
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class ArrayFilter extends Filter {

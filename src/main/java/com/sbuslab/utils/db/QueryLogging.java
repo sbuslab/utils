@@ -3,6 +3,7 @@ package com.sbuslab.utils.db;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
@@ -19,6 +20,10 @@ public abstract class QueryLogging {
         .register();
 
     protected static Logger log = LoggerFactory.getLogger("sql.query.logging");
+
+    protected <T> T logged(String name, Supplier<T> func) {
+        return logged(name, "", null, (ignored) -> func.get());
+    }
 
     protected <T> T logged(String name, String sql, Function<String, T> func) {
         return logged(name, sql, null, func);

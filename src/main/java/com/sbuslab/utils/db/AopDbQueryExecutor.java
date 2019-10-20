@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,7 +17,6 @@ import com.sbuslab.model.Paging;
 import com.sbuslab.model.Sorting;
 
 
-@Slf4j
 @Aspect
 @Component
 public class AopDbQueryExecutor {

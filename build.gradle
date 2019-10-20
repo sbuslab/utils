@@ -84,6 +84,7 @@ dependencies {
 
     compile 'org.flywaydb:flyway-core:6.0.7'
     compile 'javax.transaction:jta:1.1'
+    compile 'javax.xml.bind:jaxb-api:2.2.11'
 
     compile 'org.postgresql:postgresql:42.2.8'
 

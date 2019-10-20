@@ -30,7 +30,7 @@ class FutureHelpersTest extends FunSuite {
     val ints: Seq[Int] = Await.result(resultFuture, Duration.Inf)
     val finish = System.currentTimeMillis()
     assertThat(ints.toList.asJava.size()).isEqualTo(100)
-    assertThat(finish - start).isCloseTo(2500L, Offset.offset[java.lang.Long](200L))
+    assertThat(finish - start).isCloseTo(2500L, Offset.offset[java.lang.Long](300L))
   }
 
 }

@@ -96,8 +96,9 @@ dependencies {
 
     compile 'net.spy:spymemcached:2.12.3'
 
-    compile 'io.prometheus:simpleclient_hotspot:0.7.0'
-    compile 'io.prometheus:simpleclient_httpserver:0.7.0'
+    compile 'io.prometheus:simpleclient_hotspot:0.8.0'
+    compile 'io.prometheus:simpleclient_httpserver:0.8.0'
+    compile 'io.prometheus:simpleclient_logback:0.8.0'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'

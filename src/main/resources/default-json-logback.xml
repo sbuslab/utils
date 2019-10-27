@@ -5,6 +5,8 @@
     <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
   </appender>
 
+  <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender" />
+
   <logger name="org.jboss.netty" level="INFO"/>
   <logger name="reactor.ipc.netty" level="INFO"/>
   <logger name="org.asynchttpclient" level="INFO"/>
@@ -23,5 +25,6 @@
 
   <root level="TRACE">
     <appender-ref ref="STDOUT"/>
+    <appender-ref ref="METRICS" />
   </root>
 </included>

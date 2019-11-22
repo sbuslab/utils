@@ -2,10 +2,28 @@
   <jmxConfigurator/>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <fieldNames>
+        <message>[ignore]</message>
+      </fieldNames>
+      <provider class="net.logstash.logback.composite.loggingevent.LoggingEventPatternJsonProvider">
+        <pattern>
+          {
+            "message": "%replace(%msg){'secret:::[a-zA-Z0-9=_-]+', '[secret]'}"
+          }
+        </pattern>
+      </provider>
+      <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+        <maxDepthPerThrowable>30</maxDepthPerThrowable>
+        <maxLength>2048</maxLength>
+        <exclude>akka\.*</exclude>
+        <exclude>scala\.*</exclude>
+        <exclude>java\.*</exclude>
+      </throwableConverter>
+    </encoder>
   </appender>
 
-  <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender" />
+  <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender"/>
 
   <logger name="org.jboss.netty" level="INFO"/>
   <logger name="reactor.ipc.netty" level="INFO"/>
@@ -25,6 +43,6 @@
 
   <root level="TRACE">
     <appender-ref ref="STDOUT"/>
-    <appender-ref ref="METRICS" />
+    <appender-ref ref="METRICS"/>
   </root>
 </included>

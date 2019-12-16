@@ -166,10 +166,10 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Autowired
-    public Reflections initSbusSubscriptions(ApplicationContext appContext) {
+    public Reflections initSbusSubscriptions(ApplicationContext appContext, Config config) {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-        String packageToScan = getConfig().getString("sbus.package-to-scan");
+        String packageToScan = config.getString("sbus.package-to-scan");
 
         Reflections reflections = new Reflections(
             new ConfigurationBuilder()

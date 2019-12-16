@@ -16,9 +16,7 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -26,9 +24,9 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sbuslab.utils.db.JdbcUtils;
 import com.sbuslab.utils.db.DbMigration;
 import com.sbuslab.utils.db.EntitiesSqlFields;
+import com.sbuslab.utils.db.JdbcUtils;
 import com.sbuslab.utils.db.WithQueryBuilder;
 
 
@@ -46,9 +44,12 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     @DependsOn("dbMigrations")
     public DataSource getDatasource() {
         Config conf = getDbConfig();
+        return makeDatasource(conf, conf.getInt("port"));
+    }
 
+    private DataSource makeDatasource(Config conf, int port) {
         HikariConfig hk = new HikariConfig();
-        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), conf.getInt("port"), conf.getString("db")));
+        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), port, conf.getString("db")));
         hk.setDriverClassName(conf.getString("driverClassName"));
         hk.setUsername(conf.getString("username"));
         hk.setPassword(conf.getString("password"));
@@ -86,10 +87,19 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     }
 
     @Bean
+    @Primary
     @Autowired
     @DependsOn("dbMigrations")
     public NamedParameterJdbcTemplate getJdbcTemplate(DataSource datasource) {
         return new NamedParameterJdbcTemplate(datasource);
+    }
+
+    @Lazy
+    @Bean(name = "readOnlyJdbc")
+    @DependsOn("dbMigrations")
+    public NamedParameterJdbcTemplate getReadonlyJdbcTemplate() {
+        Config conf = getDbConfig();
+        return new NamedParameterJdbcTemplate(makeDatasource(conf, conf.getInt("readonly-port")));
     }
 
     @Bean

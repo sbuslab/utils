@@ -19,6 +19,7 @@
         <exclude>akka\.*</exclude>
         <exclude>scala\.*</exclude>
         <exclude>java\.*</exclude>
+        <exclude>org\.springframework\.*</exclude>
       </throwableConverter>
     </encoder>
   </appender>

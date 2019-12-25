@@ -27,4 +27,7 @@ trait Memoize {
         exist
       }
     }).obj.asInstanceOf[T]
+
+  def memoizeClear(key: String): Unit =
+    cache.remove(cache)
 }

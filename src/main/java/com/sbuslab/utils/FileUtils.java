@@ -35,7 +35,8 @@ public class FileUtils {
                 }
                 url = getDefaultClassLoader().getResource(location);
             } else if (location.startsWith(File.separator)
-                    || (System.getProperty("os.name").contains("Windows") && location.charAt(1) == ':')) {
+                    || (System.getProperty("os.name").contains("Windows")
+                        && location.length() > 1 && location.charAt(1) == ':')) {
                 try {
                     url = new URL(location);
                 } catch (MalformedURLException e) {

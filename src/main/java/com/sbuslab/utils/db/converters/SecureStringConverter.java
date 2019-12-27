@@ -16,6 +16,6 @@ public class SecureStringConverter implements AttributeConverter<SecureString, S
 
     @Override
     public SecureString convertToEntityAttribute(String v) {
-        return v == null ? null : new SecureString(v);
+        return v == null ? null : SecureString.fromString(v);
     }
 }

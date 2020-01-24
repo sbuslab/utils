@@ -16,7 +16,7 @@ import com.sbuslab.utils.FileUtils;
 /**
  * -Dconfig.localfile=/path/to/local-config-fiel.conf
  * or
- * export CONFIG_LOCALFILE=/path/to/local-config-fiel.conf
+ * export SBUS_CONFIG_LOCALFILE=/path/to/local-config-fiel.conf
  */
 @Slf4j
 public class ConfigLoader {

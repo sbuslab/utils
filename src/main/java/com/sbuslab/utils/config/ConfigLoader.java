@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Optional;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -12,13 +13,19 @@ import lombok.extern.slf4j.Slf4j;
 import com.sbuslab.utils.FileUtils;
 
 
+/**
+ * -Dconfig.localfile=/path/to/local-config-fiel.conf
+ * or
+ * export SBUS_CONFIG_LOCALFILE=/path/to/local-config-fiel.conf
+ */
 @Slf4j
 public class ConfigLoader {
 
     public static Config load() {
-        String configPaths = System.getProperty("config.localfile", "")
-            .replace("/", File.separator)
-            .replace("\\", File.separator);
+        String configPaths = System.getProperty("config.localfile",
+            Optional.ofNullable(System.getenv("SBUS_CONFIG_LOCALFILE")).orElse(""))
+                .replace("/", File.separator)
+                .replace("\\", File.separator);
 
         try {
             String secretsUrl = System.getenv("SECRET_CONFIG_URL");

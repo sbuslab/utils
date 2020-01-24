@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Optional;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -11,21 +12,18 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.sbuslab.utils.FileUtils;
 
+
 /**
- * config.localfile - позволяет задать локальную конфигурацию для каждого проекта через VM options
- * (-Dconfig.localfile=путь_к_настройкам)
- * <p>
- * LOCALFILE_SBUS_CONFIG - позволяет задать локальную конфигурацию для всех проектов разом на уровне окружения,
- * при этом сохраняется приоритет индвидуальной конфигурации над конфигурацией окружения ОС.
+ * -Dconfig.localfile=/path/to/local-config-fiel.conf
+ * or
+ * export CONFIG_LOCALFILE=/path/to/local-config-fiel.conf
  */
 @Slf4j
 public class ConfigLoader {
 
     public static Config load() {
-        String localfileSbusConfig = System.getenv("LOCALFILE_SBUS_CONFIG"); //to be able to overwrite the configuration in docker
         String configPaths = System.getProperty("config.localfile",
-                localfileSbusConfig == null
-                        ? "" : localfileSbusConfig)
+            Optional.ofNullable(System.getenv("SBUS_CONFIG_LOCALFILE")).orElse(""))
                 .replace("/", File.separator)
                 .replace("\\", File.separator);
 

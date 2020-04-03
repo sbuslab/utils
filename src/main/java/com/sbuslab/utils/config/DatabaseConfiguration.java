@@ -47,7 +47,7 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         return makeDatasource(conf, conf.getInt("port"));
     }
 
-    private DataSource makeDatasource(Config conf, int port) {
+    protected DataSource makeDatasource(Config conf, int port) {
         HikariConfig hk = new HikariConfig();
         hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), port, conf.getString("db")));
         hk.setDriverClassName(conf.getString("driverClassName"));

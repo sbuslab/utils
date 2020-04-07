@@ -178,6 +178,10 @@ public abstract class DefaultConfiguration {
                 .setScanners(new MethodAnnotationsScanner()));
 
         reflections.getMethodsAnnotatedWith(Subscribe.class).forEach(method -> {
+            if (method.getDeclaringClass().isInterface()) {
+                return; // skip interfaces without implementations
+            }
+
             Sbus sbus     = appContext.getBean(Sbus.class);
             Object parent = appContext.getBean(method.getDeclaringClass());
             Subscribe ann = method.getAnnotation(Subscribe.class);

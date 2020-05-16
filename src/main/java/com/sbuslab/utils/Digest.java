@@ -113,7 +113,7 @@ public class Digest {
 
             return java.util.Base64.getEncoder().encodeToString(saltedCipherData);
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -139,7 +139,7 @@ public class Digest {
             Cipher encryptCipher = Cipher.getInstance("RSA");
             encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
             byte[] cipherText = encryptCipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
-            return  java.util.Base64.getEncoder().encodeToString(cipherText);
+            return java.util.Base64.getEncoder().encodeToString(cipherText);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -156,6 +156,23 @@ public class Digest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String crc16(byte[] bytes) {
+        int crc = 0xFFFF;
+        int polynomial = 0x1021;
+
+        for (byte b : bytes) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((crc >> 15 & 1) == 1);
+                crc <<= 1;
+                if (c15 ^ bit) crc ^= polynomial;
+            }
+        }
+
+        crc &= 0xffff;
+        return Integer.toHexString(crc);
     }
 
     private static String digest(String digestName, byte[] message) {

@@ -46,6 +46,10 @@ public class Digest {
         return hex(hmac("HmacSHA256", message, key));
     }
 
+    public static String hMacSHA384(final String message, final String key) throws InvalidKeyException, NoSuchAlgorithmException {
+        return hex(hmac("HmacSHA384", message, key));
+    }
+
     public static byte[] hmac(final String algorithm, final String message, final String key) throws InvalidKeyException, NoSuchAlgorithmException {
         final Mac hmac = Mac.getInstance(algorithm);
         hmac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm));

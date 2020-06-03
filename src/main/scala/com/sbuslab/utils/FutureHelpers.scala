@@ -66,16 +66,16 @@ trait FutureHelpers {
       expBackOff(maxAttempts, noRetry)(f)
     }
 
-    def expBackOff[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
-      retryImpl(1, maxAttempts, noRetry, expBackOffDelay, f)
+    def expBackOff[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable, maxDelayAttempts: Int = 7)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
+      retryImpl(1, maxAttempts, noRetry, expBackOffDelay(maxDelayAttempts), f)
     }
 
     def linear[T](maxAttempts: Int = 5, noRetry: PartialFunction[Throwable, Boolean] = unrecoverable, delay: FiniteDuration = 0.millis)(f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] = {
       retryImpl(1, maxAttempts, noRetry, _ ⇒ delay, f)
     }
 
-    private def expBackOffDelay(n: Int) =
-      (math.pow(2, math.min(n - 1, 7)).round * 100).millis
+    private def expBackOffDelay(max: Int)(n: Int) =
+      (math.pow(2, math.min(n - 1, max)).round * 100).millis
 
     private def retryImpl[T](attempt: Int, max: Int, noRetry: PartialFunction[Throwable, Boolean], delay: Int ⇒ FiniteDuration, f: ⇒ Future[T])(implicit system: ActorSystem, ec: ExecutionContext): Future[T] =
       if (attempt >= max) {

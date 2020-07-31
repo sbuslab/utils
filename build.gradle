@@ -29,6 +29,10 @@ if (this.parent == null) {
         packageGroup = 'com.sbuslab'
         stagingProfileId = '3eeedfb73a4d9e'
     }
+
+    test {
+        testLogging.showStandardStreams = true
+    }
 }
 
 modifyPom {

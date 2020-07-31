@@ -14,9 +14,10 @@ import java.util.Arrays;
 
 public class AesPbkdf2 {
 
+    private static final Integer VERSION = 1;
     private static final int SALT_SIZE  = 16;
     private static final int IV_SIZE    = 12;
-    private static final int ITERATIONS = 100000;
+    private static final int ITERATIONS = 200000;
 
     public static String encrypt(String secret, String text) {
         try {
@@ -36,8 +37,8 @@ public class AesPbkdf2 {
 
             byte[] encrypted = cipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
 
-            ByteBuffer buf = ByteBuffer.allocate(SALT_SIZE + IV_SIZE + encrypted.length);
-            buf.put(salt).put(iv).put(encrypted);
+            ByteBuffer buf = ByteBuffer.allocate(1 + SALT_SIZE + IV_SIZE + encrypted.length);
+            buf.put(VERSION.byteValue()).put(salt).put(iv).put(encrypted);
 
             return java.util.Base64.getEncoder().encodeToString(buf.array());
         } catch (Exception e) {
@@ -48,8 +49,14 @@ public class AesPbkdf2 {
     public static String decrypt(String secret, String data) {
         try {
             byte[] encrypted = java.util.Base64.getDecoder().decode(data);
-            byte[] salt = Arrays.copyOfRange(encrypted, 0, SALT_SIZE);
-            byte[] iv = Arrays.copyOfRange(encrypted, SALT_SIZE, SALT_SIZE + IV_SIZE);
+            int version =  Arrays.copyOfRange(encrypted, 0, 1)[0];
+
+            if (version != VERSION) {
+                throw new RuntimeException("Unknown encryption version");
+            }
+
+            byte[] salt = Arrays.copyOfRange(encrypted, 1, 1 + SALT_SIZE);
+            byte[] iv = Arrays.copyOfRange(encrypted, 1 + SALT_SIZE, 1 + SALT_SIZE + IV_SIZE);
 
             SecretKey key = new SecretKeySpec(
                 SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
@@ -58,7 +65,7 @@ public class AesPbkdf2 {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
 
-            byte[] decrypted = cipher.doFinal(Arrays.copyOfRange(encrypted, SALT_SIZE + IV_SIZE, encrypted.length));
+            byte[] decrypted = cipher.doFinal(Arrays.copyOfRange(encrypted, 1 + SALT_SIZE + IV_SIZE, encrypted.length));
             return new String(decrypted, StandardCharsets.UTF_8);
         } catch (javax.crypto.AEADBadTagException e) {
             throw new RuntimeException("AES: incorrect password", e);

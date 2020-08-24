@@ -139,10 +139,7 @@ public class Digest {
             generator.initialize(2048, new SecureRandom());
             KeyPair pair = generator.generateKeyPair();
 
-            return new GeneratedKeys(
-                java.util.Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()),
-                java.util.Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded())
-            );
+            return new GeneratedKeys(encodeBase64(pair.getPublic().getEncoded()), encodeBase64(pair.getPrivate().getEncoded()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -150,52 +147,50 @@ public class Digest {
 
     public static String encryptRsa(String publicKeyString, String text) {
         try {
-            final byte[] gcmKeyBytes = new byte[32];
+            final byte[] aesKeyBytes = new byte[32];
             SecureRandom random = SecureRandom.getInstanceStrong();
-            random.nextBytes(gcmKeyBytes);
-            final String gcmKey = new String(gcmKeyBytes, StandardCharsets.UTF_8);
+            random.nextBytes(aesKeyBytes);
 
-            String encrypted = AesPbkdf2.encrypt(gcmKey, text);
+            String aesEncryptedText = encryptAesGcm(new String(aesKeyBytes, StandardCharsets.UTF_8), text);
 
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKeyString)));
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decodeBase64(publicKeyString)));
 
-            Cipher encryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
-            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] cipherText = encryptCipher.doFinal(java.util.Base64.getEncoder().encodeToString(gcmKey.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+            Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
+            rsaCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] cipheredAesKey = rsaCipher.doFinal(Base64.encodeBase64(aesKeyBytes));
 
-            return (java.util.Base64.getEncoder().encodeToString(cipherText) + "\n" + encrypted);
+            return encodeBase64(cipheredAesKey) + "\n" + aesEncryptedText;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     public static String decryptRsa(String privateKeyString, String text) throws Exception {
-        PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(privateKeyString)));
+        PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decodeBase64(privateKeyString)));
 
         try {
             String[] parts = text.split("\n");
 
-            Cipher decryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
-            decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+            Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
+            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
 
-            String gcmKey = new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(parts[0])), StandardCharsets.UTF_8);
+            byte[] aesKey = rsaCipher.doFinal(Base64.decodeBase64(parts[0]));
 
             if (parts.length != 2) {
                 throw new IllegalArgumentException("Illegal encrypted text");
             }
 
-            return AesPbkdf2.decrypt(new String(java.util.Base64.getDecoder().decode(gcmKey)), parts[1]);
+            return decryptAesGcm(new String(Base64.decodeBase64(aesKey), StandardCharsets.UTF_8), parts[1]);
 
         } catch (BadBlockException error) {
             try {
-                Cipher decryptCipher = Cipher.getInstance("RSA");
-                decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+                Cipher oldRsaCipher = Cipher.getInstance("RSA");
+                oldRsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
 
-                return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(text)), StandardCharsets.UTF_8);
+                return new String(oldRsaCipher.doFinal(decodeBase64(text)), StandardCharsets.UTF_8);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

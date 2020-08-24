@@ -104,6 +104,8 @@ dependencies {
     compile 'io.prometheus:simpleclient_httpserver:0.8.0'
     compile 'io.prometheus:simpleclient_logback:0.8.0'
 
+    compile 'org.bouncycastle:bcprov-jdk15on:1.65'
+
     testCompile 'junit:junit:4.12'
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'
     testCompile 'org.assertj:assertj-core:3.13.2'

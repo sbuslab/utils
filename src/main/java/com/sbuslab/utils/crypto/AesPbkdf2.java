@@ -15,9 +15,9 @@ import java.util.Arrays;
 public class AesPbkdf2 {
 
     private static final Integer VERSION = 1;
-    private static final int SALT_SIZE  = 16;
-    private static final int IV_SIZE    = 12;
-    private static final int ITERATIONS = 200000;
+    private static final int SALT_SIZE   = 16;
+    private static final int IV_SIZE     = 12;
+    private static final int ITERATIONS  = 200000;
 
     public static String encrypt(String secret, String text) {
         try {

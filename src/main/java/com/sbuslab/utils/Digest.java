@@ -14,9 +14,17 @@ import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.jcajce.provider.util.BadBlockException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import com.sbuslab.utils.crypto.AesPbkdf2;
 
 
 public class Digest {
+
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     public static String md5(String message) {
         return md5(message.getBytes());
@@ -117,6 +125,14 @@ public class Digest {
         }
     }
 
+    public static String encryptAesGcm(String secret, String text) {
+        return AesPbkdf2.encrypt(secret, text);
+    }
+
+    public static String decryptAesGcm(String secret, String text) {
+        return AesPbkdf2.decrypt(secret, text);
+    }
+
     public static GeneratedKeys generateRsaKeyPair() {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -134,25 +150,52 @@ public class Digest {
 
     public static String encryptRsa(String publicKeyString, String text) {
         try {
+            final byte[] gcmKeyBytes = new byte[32];
+            SecureRandom random = SecureRandom.getInstanceStrong();
+            random.nextBytes(gcmKeyBytes);
+            final String gcmKey = new String(gcmKeyBytes, StandardCharsets.UTF_8);
+
+            String encrypted = AesPbkdf2.encrypt(gcmKey, text);
+
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKeyString)));
 
-            Cipher encryptCipher = Cipher.getInstance("RSA");
+            Cipher encryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
             encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] cipherText = encryptCipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
-            return java.util.Base64.getEncoder().encodeToString(cipherText);
+            byte[] cipherText = encryptCipher.doFinal(java.util.Base64.getEncoder().encodeToString(gcmKey.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+
+            return (java.util.Base64.getEncoder().encodeToString(cipherText) + "\n" + encrypted);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     public static String decryptRsa(String privateKeyString, String text) throws Exception {
-        try {
-            PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(privateKeyString)));
+        PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(privateKeyString)));
 
-            Cipher decryptCipher = Cipher.getInstance("RSA");
+        try {
+            String[] parts = text.split("\n");
+
+            Cipher decryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
             decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
 
-            return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(text)), StandardCharsets.UTF_8);
+            String gcmKey = new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(parts[0])), StandardCharsets.UTF_8);
+
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("Illegal encrypted text");
+            }
+
+            return AesPbkdf2.decrypt(new String(java.util.Base64.getDecoder().decode(gcmKey)), parts[1]);
+
+        } catch (BadBlockException error) {
+            try {
+                Cipher decryptCipher = Cipher.getInstance("RSA");
+                decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+                return new String(decryptCipher.doFinal(java.util.Base64.getDecoder().decode(text)), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -22,6 +22,10 @@ import com.sbuslab.utils.crypto.AesPbkdf2;
 
 public class Digest {
 
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     public static String md5(String message) {
         return md5(message.getBytes());
     }
@@ -151,7 +155,6 @@ public class Digest {
 
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decodeBase64(publicKeyString)));
 
-            Security.addProvider(new BouncyCastleProvider());
             Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
             rsaCipher.init(Cipher.ENCRYPT_MODE, publicKey);
             byte[] cipheredAesKey = rsaCipher.doFinal(Base64.encodeBase64(aesKeyBytes));
@@ -168,7 +171,6 @@ public class Digest {
         try {
             String[] parts = text.split("\n");
 
-            Security.addProvider(new BouncyCastleProvider());
             Cipher rsaCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding", "BC");
             rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
 

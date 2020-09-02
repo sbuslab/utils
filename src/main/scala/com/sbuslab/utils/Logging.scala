@@ -1,6 +1,6 @@
 package com.sbuslab.utils
 
-import com.typesafe.scalalogging.{CanLog, Logger}
+import com.typesafe.scalalogging.{CanLog, Logger, LoggerTakingImplicit}
 import org.slf4j.{LoggerFactory, MDC}
 
 import com.sbuslab.sbus.Context
@@ -19,9 +19,17 @@ trait Logging {
     }
   }
 
-  protected val log = getLogger(this.getClass.getName)
+  implicit class CriticalLogger(underlying: LoggerTakingImplicit[Context]) {
+    def critical(message: String)(implicit ctx: Context): Unit = underlying.error("[Critical Alert] " + message)
+    def critical(message: String, cause: Throwable)(implicit ctx: Context): Unit = underlying.error("[Critical Alert] " + message, cause)
+    def critical(message: String, args: Any*)(implicit ctx: Context): Unit = underlying.error("[Critical Alert] " + message, args)
+  }
 
-  protected val slog = Logger.takingImplicit[Context](LoggerFactory.getLogger(this.getClass.getName))
+  protected val log: Logger =
+    getLogger(this.getClass.getName)
+
+  protected val slog: LoggerTakingImplicit[Context] =
+    Logger.takingImplicit[Context](LoggerFactory.getLogger(this.getClass.getName))
 
   def getLogger(name: String) = Logger(LoggerFactory.getLogger(name))
 }

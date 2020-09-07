@@ -110,6 +110,7 @@ public abstract class DefaultConfiguration {
             .setConnectTimeout(conf.getInt("connect-timeout"))
             .setRequestTimeout(conf.getInt("request-timeout"))
             .setReadTimeout(conf.getInt("read-timeout"))
+            .setHttpClientCodecMaxHeaderSize(16384)
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {

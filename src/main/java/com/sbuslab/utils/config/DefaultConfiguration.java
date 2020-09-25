@@ -105,6 +105,7 @@ public abstract class DefaultConfiguration {
         Config conf = config.getConfig("sbuslab.http-client");
 
         DefaultAsyncHttpClientConfig.Builder bldr = Dsl.config()
+            .setUserAgent(null)
             .setMaxConnections(conf.getInt("max-connections"))
             .setMaxConnectionsPerHost(conf.getInt("max-connections-per-host"))
             .setConnectTimeout(conf.getInt("connect-timeout"))

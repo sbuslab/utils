@@ -211,7 +211,7 @@ public abstract class DefaultConfiguration {
                                 e.getPropertyPath() + " in " + e.getRootBeanClass().getSimpleName() + " " + e.getMessage()
                             ).collect(Collectors.joining("; \n")), null, "validation-error");
 
-                            log.error("Sbus validation error:" + ex.getMessage(), ex);
+                            log.error("Sbus validation error: " + ex.getMessage(), ex);
 
                             throw ex;
                         }

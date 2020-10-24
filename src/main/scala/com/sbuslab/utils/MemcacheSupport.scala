@@ -1,11 +1,30 @@
 package com.sbuslab.utils
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration.Duration
+import scala.util.{Success, Try}
 
 import net.spy.memcached.internal._
+import net.spy.memcached.MemcachedClient
 
 
 trait MemcacheSupport {
+
+  private val disabledCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+
+  protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit e: ExecutionContext, memClient: MemcachedClient): Future[T] =
+    if (disabledCache) f else {
+      memClient.asyncGet("memcached:" + key) flatMap { result ⇒
+        if (result != null) {
+          Future.fromTry(Try(JsonFormatter.deserialize[T](result.toString)))
+        } else {
+          f andThen {
+            case Success(result) ⇒
+              memClient.set("memcached:" + key, timeout.toSeconds.toInt, JsonFormatter.serialize(result))
+          }
+        }
+      }
+    }
 
   implicit def asFutureGet[A](of: GetFuture[A]): Future[A] = {
     val promise = Promise[A]()

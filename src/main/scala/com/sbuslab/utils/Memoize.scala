@@ -10,16 +10,16 @@ trait Memoize {
 
   case class CachedObject(expiredAt: Long, obj: Any)
 
-  private val cache = new ConcurrentHashMap[String, CachedObject]()
-  private val disabledCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+  private val memoizeCache = new ConcurrentHashMap[String, CachedObject]()
+  private val disabledMemoizeCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
   def memoize[T](key: String, timeout: Duration)(f: ⇒ T)(implicit e: ExecutionContext): T =
-    cache.compute(key, (_, exist) ⇒ {
-      if (exist == null || disabledCache || exist.expiredAt < System.currentTimeMillis()) {
+    memoizeCache.compute(key, (_, exist) ⇒ {
+      if (exist == null || disabledMemoizeCache || exist.expiredAt < System.currentTimeMillis()) {
         val result = f
 
         result match {
-          case f: Future[_] ⇒ f andThen { case _: Failure[_] ⇒ cache.remove(key) }
+          case f: Future[_] ⇒ f andThen { case _: Failure[_] ⇒ memoizeCache.remove(key) }
           case _ ⇒
         }
 
@@ -30,5 +30,5 @@ trait Memoize {
     }).obj.asInstanceOf[T]
 
   def memoizeClear(key: String): Unit =
-    cache.remove(key)
+    memoizeCache.remove(key)
 }

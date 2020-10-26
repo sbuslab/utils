@@ -10,10 +10,10 @@ import net.spy.memcached.MemcachedClient
 
 trait MemcacheSupport {
 
-  private val disabledCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+  private val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
   protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit e: ExecutionContext, memClient: MemcachedClient): Future[T] =
-    if (disabledCache) f else {
+    if (disabledMemoizeMemcached) f else {
       memClient.asyncGet("memcached:" + key) flatMap { result ⇒
         if (result != null) {
           Future.fromTry(Try(JsonFormatter.deserialize[T](result.toString)))

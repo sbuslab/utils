@@ -26,6 +26,11 @@ trait MemcacheSupport {
       }
     }
 
+  protected def memcachedClear(key: String)(implicit memClient: MemcachedClient) =
+    if (!disabledMemoizeMemcached) {
+      memClient.delete("memcached:" + key)
+    }
+
   implicit def asFutureGet[A](of: GetFuture[A]): Future[A] = {
     val promise = Promise[A]()
 

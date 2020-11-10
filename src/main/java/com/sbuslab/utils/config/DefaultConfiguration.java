@@ -112,6 +112,7 @@ public abstract class DefaultConfiguration {
             .setRequestTimeout(conf.getInt("request-timeout"))
             .setReadTimeout(conf.getInt("read-timeout"))
             .setHttpClientCodecMaxHeaderSize(16384)
+            .setCookieStore(null) // don't save cookies between requests
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {

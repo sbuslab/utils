@@ -42,6 +42,7 @@
   <logger name="com.github.sstone.amqp.ConnectionOwner" level="WARN"/>
   <logger name="com.zaxxer.hikari" level="INFO"/>
   <logger name="springfox.documentation" level="INFO"/>
+  <logger name="quickfix.mina.message" level="WARN"/>
 
   <root level="TRACE">
     <appender-ref ref="STDOUT"/>

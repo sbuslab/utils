@@ -3,7 +3,8 @@ package com.sbuslab.utils
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
-import scala.util.Failure
+import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
 
 
 trait Memoize {
@@ -28,6 +29,19 @@ trait Memoize {
         exist
       }
     }).obj.asInstanceOf[T]
+
+  def memoizeFallback[T](key: String)(f: ⇒ Future[T])(implicit e: ExecutionContext): Future[T] =
+    (try f catch {
+      case NonFatal(e) ⇒ Future.failed(e)
+    }) andThen {
+      case Success(result) ⇒ memoizeCache.put("fallback:" + key, CachedObject(0, result))
+    } recover {
+      case NonFatal(e) ⇒
+        memoizeCache.get("fallback:" + key) match {
+          case null   ⇒ throw e
+          case result ⇒ result.obj.asInstanceOf[T]
+        }
+    }
 
   def memoizeClear(key: String): Unit =
     memoizeCache.remove(key)

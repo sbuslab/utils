@@ -7,6 +7,7 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
 
 import akka.actor.ActorSystem
 
@@ -82,7 +83,10 @@ trait FutureHelpers {
         f
       } else {
         val p = Promise[T]()
-        f onComplete {
+
+        (try f catch {
+          case NonFatal(e) ⇒ Future.failed(e)
+        }) onComplete {
           case Success(res) ⇒ p.success(res)
           case Failure(e) ⇒
             if (noRetry.isDefinedAt(e) && noRetry(e)) {
@@ -93,6 +97,7 @@ trait FutureHelpers {
               }
             }
         }
+
         p.future
       }
 

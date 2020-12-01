@@ -1,6 +1,10 @@
 package com.sbuslab.utils;
 
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+
 public class StringUtils {
 
     /**
@@ -31,5 +35,9 @@ public class StringUtils {
             }
         }
         return buf.toString().toLowerCase();
+    }
+
+    public static String urlEncode(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

@@ -43,6 +43,7 @@
   <logger name="com.zaxxer.hikari" level="INFO"/>
   <logger name="springfox.documentation" level="INFO"/>
   <logger name="quickfix.mina.message" level="WARN"/>
+  <logger name="com.amazonaws" level="INFO"/>
 
   <root level="TRACE">
     <appender-ref ref="STDOUT"/>

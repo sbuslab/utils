@@ -4,7 +4,9 @@ import java.lang.reflect.{ParameterizedType, Type}
 
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind._
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializerBase
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 import com.sbuslab.utils.json.JsonMapperFactory
@@ -64,6 +66,13 @@ object JsonFormatter extends JsonFormatter {
   def createMapper() = {
     val m = JsonMapperFactory.createMapper()
     m.registerModule(DefaultScalaModule)
+
+    m.registerModule(
+      new SimpleModule("ScalaBigDecimalToPlainStringSerializer")
+        .addSerializer(classOf[BigDecimal], new ToStringSerializerBase(classOf[BigDecimal]) {
+          override def valueToString(o: Any) = o.asInstanceOf[BigDecimal].bigDecimal.toPlainString
+        }))
+
     m
   }
 }

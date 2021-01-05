@@ -7,20 +7,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.jboss.netty" level="INFO"/>
-  <logger name="org.asynchttpclient" level="INFO"/>
-  <logger name="com.ning.http.client" level="INFO"/>
-  <logger name="org.springframework" level="INFO"/>
-  <logger name="org.apache" level="INFO"/>
-  <logger name="org.apache.coyote.http11.Http11InputBuffer" level="DEBUG"/>
-  <logger name="org.hibernate" level="WARN"/>
-  <logger name="javax.management" level="INFO"/>
-  <logger name="io.netty" level="INFO"/>
-  <logger name="org.postgresql" level="INFO"/>
-  <logger name="org.flywaydb" level="INFO"/>
-  <logger name="sun.rmi" level="WARN"/>
-  <logger name="com.zaxxer.hikari" level="INFO"/>
-  <logger name="springfox.documentation" level="INFO"/>
+  <include resource="logback-logger-excludes.xml" />
 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>

@@ -26,25 +26,7 @@
 
   <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender"/>
 
-  <logger name="org.jboss.netty" level="INFO"/>
-  <logger name="reactor.ipc.netty" level="INFO"/>
-  <logger name="org.asynchttpclient" level="INFO"/>
-  <logger name="com.ning.http.client" level="INFO"/>
-  <logger name="org.springframework" level="INFO"/>
-  <logger name="org.apache" level="INFO"/>
-  <logger name="org.apache.coyote.http11.Http11InputBuffer" level="DEBUG"/>
-  <logger name="org.hibernate" level="WARN"/>
-  <logger name="javax.management" level="INFO"/>
-  <logger name="io.netty" level="INFO"/>
-  <logger name="org.postgresql" level="INFO"/>
-  <logger name="org.flywaydb" level="INFO"/>
-  <logger name="sun.rmi" level="WARN"/>
-  <logger name="com.github.sstone.amqp.ConnectionOwner" level="WARN"/>
-  <logger name="com.zaxxer.hikari" level="INFO"/>
-  <logger name="springfox.documentation" level="INFO"/>
-  <logger name="quickfix.mina.message" level="WARN"/>
-  <logger name="com.amazonaws" level="INFO"/>
-  <logger name="ru.yandex.clickhouse" level="INFO"/>
+  <include resource="logback-logger-excludes.xml" />
 
   <root level="TRACE">
     <appender-ref ref="STDOUT"/>

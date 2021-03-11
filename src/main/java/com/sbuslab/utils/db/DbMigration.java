@@ -32,7 +32,7 @@ public class DbMigration {
                 )
                 .ignoreFutureMigrations(true)
                 .baselineOnMigrate(true)
-                .outOfOrder(false);
+                .outOfOrder(true);
 
             if (conf.hasPath("locations")) {
                 flywayConf.locations(conf.getString("locations"));

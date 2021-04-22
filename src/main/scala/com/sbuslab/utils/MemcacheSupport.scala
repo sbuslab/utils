@@ -10,7 +10,7 @@ import net.spy.memcached.MemcachedClient
 
 trait MemcacheSupport {
 
-  private val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+  protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
   protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit e: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {

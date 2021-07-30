@@ -82,7 +82,7 @@ dependencies {
     compile 'org.springframework:spring-jdbc:5.2.0.RELEASE'
 
     compile 'javax.validation:validation-api:2.0.1.Final'
-    compile 'org.reflections:reflections:0.9.11'
+    compile 'org.reflections:reflections:0.9.12'
 
     compile 'commons-io:commons-io:2.6'
     compile 'commons-lang:commons-lang:2.6'

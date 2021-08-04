@@ -102,6 +102,7 @@ public class Digest {
         }
     }
 
+    @Deprecated
     public static String encryptAes(String secret, String text) {
         try {
             final String Transformation = "AES/CBC/PKCS5Padding";

@@ -11,6 +11,3 @@ release-local:
 
 release:
 	gradle test uploadArchives closeAndReleaseRepository -Pversion="${VERSION}" --info
-
-release-ci:
-	gradle clean publish -Pversion="${build-number}" --info --refresh-dependencies

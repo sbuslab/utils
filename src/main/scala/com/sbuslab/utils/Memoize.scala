@@ -14,7 +14,7 @@ trait Memoize {
   private val memoizeCache = new ConcurrentHashMap[String, CachedObject]()
   private val disabledMemoizeCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
-  def memoize[T](key: String, timeout: Duration)(f: ⇒ T)(implicit e: ExecutionContext): T =
+  def memoize[T](key: String, timeout: Duration)(f: ⇒ T)(implicit ec: ExecutionContext): T =
     memoizeCache.compute(key, (_, exist) ⇒ {
       if (exist == null || disabledMemoizeCache || exist.expiredAt < System.currentTimeMillis()) {
         val result = f
@@ -30,17 +30,19 @@ trait Memoize {
       }
     }).obj.asInstanceOf[T]
 
-  def memoizeFallback[T](key: String)(f: ⇒ Future[T])(implicit e: ExecutionContext): Future[T] =
-    (try f catch {
-      case NonFatal(e) ⇒ Future.failed(e)
-    }) andThen {
-      case Success(result) ⇒ memoizeCache.put("fallback:" + key, CachedObject(0, result))
-    } recover {
-      case NonFatal(e) ⇒
-        memoizeCache.get("fallback:" + key) match {
-          case null   ⇒ throw e
-          case result ⇒ result.obj.asInstanceOf[T]
-        }
+  def memoizeFallback[T](key: String)(f: ⇒ Future[T])(implicit ec: ExecutionContext): Future[T] =
+    if (disabledMemoizeCache) f else {
+      (try f catch {
+        case NonFatal(e) ⇒ Future.failed(e)
+      }) andThen {
+        case Success(result) ⇒ memoizeCache.put("fallback:" + key, CachedObject(0, result))
+      } recover {
+        case NonFatal(e) ⇒
+          memoizeCache.get("fallback:" + key) match {
+            case null ⇒ throw e
+            case result ⇒ result.obj.asInstanceOf[T]
+          }
+      }
     }
 
   def memoizeClear(key: String): Unit =

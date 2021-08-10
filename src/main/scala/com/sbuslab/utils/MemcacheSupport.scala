@@ -3,6 +3,7 @@ package com.sbuslab.utils
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
+import scala.util.control.NonFatal
 
 import net.spy.memcached.internal._
 import net.spy.memcached.MemcachedClient
@@ -12,7 +13,7 @@ trait MemcacheSupport {
 
   protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
-  protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit e: ExecutionContext, memClient: MemcachedClient): Future[T] =
+  protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {
       memClient.asyncGet("memcached:" + key) flatMap { result ⇒
         if (result != null) {
@@ -23,6 +24,21 @@ trait MemcacheSupport {
               memClient.set("memcached:" + key, timeout.toSeconds.toInt, JsonFormatter.serialize(result))
           }
         }
+      }
+    }
+
+  protected def memcachedFallback[T: Manifest](key: String)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
+    if (disabledMemoizeMemcached) f else {
+      (try f catch {
+        case NonFatal(e) ⇒ Future.failed(e)
+      }) andThen {
+        case Success(result) ⇒ memClient.set("fallback:" + key, 0, JsonFormatter.serialize(result))
+      } recoverWith {
+        case NonFatal(e) ⇒
+          memClient.asyncGet("fallback:" + key) flatMap {
+            case null ⇒ throw e
+            case result ⇒ Future.fromTry(Try(JsonFormatter.deserialize[T](result.toString)))
+          }
       }
     }
 

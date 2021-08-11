@@ -9,7 +9,7 @@
 
   <include resource="logback-logger-excludes.xml" />
 
-  <root level="DEBUG">
+  <root level="TRACE">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>

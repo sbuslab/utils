@@ -7,6 +7,7 @@ import javax.validation.Validator;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,9 @@ import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.scheduler.ScheduleCommand;
 import com.sbuslab.sbus.Context;
 import com.sbuslab.sbus.Transport;
+import com.sbuslab.sbus.TransportDispatcher;
 import com.sbuslab.sbus.javadsl.Sbus;
+import com.sbuslab.sbus.kafka.KafkaTransport;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
 import com.sbuslab.utils.Schedule;
 import com.sbuslab.utils.Subscribe;
@@ -147,11 +150,24 @@ public abstract class DefaultConfiguration {
     @Bean
     @Lazy
     @Autowired
-    public Transport getSbusRabbitMq(Config config, ObjectMapper mapper) {
-        return new RabbitMqTransport(
-            config.getConfig("sbus.transports.rabbitmq"),
-            ActorSystem.create("sbus", config),
-            mapper
+    public Transport getSbusTransport(Config config, ObjectMapper mapper) {
+        ActorSystem actorSystem = ActorSystem.create("sbus", config);
+
+        return new TransportDispatcher(
+            config.getConfig("sbus.transports.dispatcher"),
+            Map.of(
+                "rabbitmq", new RabbitMqTransport(
+                    config.getConfig("sbus.transports.rabbitmq"),
+                    actorSystem,
+                    mapper
+                ),
+
+                "kafka", new KafkaTransport(
+                    config.getConfig("sbus.transports.kafka"),
+                    actorSystem,
+                    mapper
+                )
+            )
         );
     }
 

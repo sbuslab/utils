@@ -39,6 +39,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
@@ -70,7 +72,7 @@ public abstract class DefaultConfiguration {
         return JsonMapperFactory.mapper;
     }
 
-    @PostConstruct
+    @EventListener({ContextRefreshedEvent.class})
     public void initPrometheusExporter() {
         Config conf = getConfig().getConfig("prometheus.exporter");
 

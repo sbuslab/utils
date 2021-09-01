@@ -46,9 +46,7 @@ import org.springframework.context.event.EventListener;
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.scheduler.ScheduleCommand;
-import com.sbuslab.sbus.Context;
-import com.sbuslab.sbus.Transport;
-import com.sbuslab.sbus.TransportDispatcher;
+import com.sbuslab.sbus.*;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.kafka.KafkaTransport;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
@@ -153,11 +151,16 @@ public abstract class DefaultConfiguration {
     public Transport getSbusTransport(Config config, ObjectMapper mapper) {
         ActorSystem actorSystem = ActorSystem.create("sbus", config);
 
+        AuthProvider authProvider = config.getBoolean("sbus.auth.enabled")
+            ? new AuthProviderImpl(config.getConfig("sbus.auth"))
+            : new NoopAuthProvider();
+
         return new TransportDispatcher(
             config.getConfig("sbus.transports.dispatcher"),
             Map.of(
                 "rabbitmq", new RabbitMqTransport(
                     config.getConfig("sbus.transports.rabbitmq"),
+                    authProvider,
                     actorSystem,
                     mapper
                 ),

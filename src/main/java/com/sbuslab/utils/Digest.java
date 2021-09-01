@@ -12,6 +12,8 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.UUID;
 
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
@@ -24,6 +26,7 @@ public class Digest {
 
     static {
         Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new EdDSASecurityProvider());
     }
 
     public static String md5(String message) {
@@ -71,6 +74,10 @@ public class Digest {
 
     public static String hex(final byte[] data) {
         return Hex.encodeHexString(data);
+    }
+
+    public static byte[] unhex(final String hex) throws DecoderException {
+        return Hex.decodeHex(hex);
     }
 
     public static String encodeBase64(final byte[] data) {

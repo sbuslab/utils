@@ -42,6 +42,11 @@ trait MemcacheSupport {
       }
     }
 
+  protected def memcachedWithFallback[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
+    memcached(key, timeout) {
+      memcachedFallback(key)(f)
+    }
+
   protected def memcachedClear(key: String)(implicit memClient: MemcachedClient) =
     if (!disabledMemoizeMemcached) {
       memClient.delete("memcached:" + key)

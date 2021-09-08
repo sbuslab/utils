@@ -14,9 +14,9 @@ import com.sbuslab.utils.FileUtils;
 
 
 /**
- * -Dconfig.localfile=/path/to/local-config-fiel.conf
+ * -Dconfig.localfile=/path/to/local-config-file.conf
  * or
- * export SBUS_CONFIG_LOCALFILE=/path/to/local-config-fiel.conf
+ * export SBUS_CONFIG_LOCALFILE=/path/to/local-config-file.conf
  */
 @Slf4j
 public class ConfigLoader {
@@ -54,6 +54,16 @@ public class ConfigLoader {
                 }
             } catch (FileNotFoundException | URISyntaxException e) {
                 log.warn(path + " is not found, skip");
+            }
+        }
+
+        String extraConfigUrl = resultConfig.getString("sbuslab.config.external-url");
+
+        if (!extraConfigUrl.isEmpty()) {
+            try {
+                resultConfig = ConfigFactory.parseURL(new URL(extraConfigUrl)).withFallback(resultConfig).resolve();
+            } catch (Exception e) {
+                log.warn("Error on load external config from url: " + extraConfigUrl + ". " + e.getMessage(), e);
             }
         }
 

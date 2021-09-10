@@ -27,6 +27,16 @@ trait MemcacheSupport {
       }
     }
 
+  protected def memcachedDeduplicate[T](key: String)(f: ⇒ T)(implicit ec: ExecutionContext, memClient: MemcachedClient): T =
+    if (disabledMemoizeMemcached) f else {
+      memClient.asyncGet("dedup:" + key) flatMap { result ⇒
+        if (result == null) {
+          memClient.set("dedup:" + key, 0, 1)
+          f
+        }
+      }
+    }
+
   protected def memcachedFallback[T: Manifest](key: String)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {
       (try f catch {

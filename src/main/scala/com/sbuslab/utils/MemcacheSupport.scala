@@ -1,5 +1,6 @@
 package com.sbuslab.utils
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
@@ -13,16 +14,24 @@ trait MemcacheSupport {
 
   protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
+  private val loading = new ConcurrentHashMap[String, Future[Any]]()
+
   protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {
       memClient.asyncGet("memcached:" + key) flatMap { result ⇒
         if (result != null) {
           Future.fromTry(Try(JsonFormatter.deserialize[T](result.toString)))
         } else {
-          f andThen {
-            case Success(result) ⇒
-              memClient.set("memcached:" + key, timeout.toSeconds.toInt, JsonFormatter.serialize(result))
-          }
+          loading.computeIfAbsent(key, _ ⇒ {
+            f andThen {
+              case Success(result) ⇒
+                memClient.set("memcached:" + key, timeout.toSeconds.toInt, JsonFormatter.serialize(result))
+                loading.remove(key)
+
+              case _ ⇒
+                loading.remove(key)
+            }
+          }).asInstanceOf[Future[T]]
         }
       }
     }
@@ -45,10 +54,16 @@ trait MemcacheSupport {
     }
 
   private def renewLazyCache[T: Manifest](key: String, timeout: Duration, f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
-    f andThen {
-      case Success(result) ⇒
-        memClient.set("memcached:" + key, timeout.toSeconds.toInt * 2, JsonFormatter.serialize(CachedObject(result, System.currentTimeMillis() + timeout.toMillis)))
-    }
+    loading.computeIfAbsent(key, _ ⇒ {
+      f andThen {
+        case Success(result) ⇒
+          memClient.set("memcached:" + key, timeout.toSeconds.toInt * 2, JsonFormatter.serialize(CachedObject(result, System.currentTimeMillis() + timeout.toMillis)))
+          loading.remove(key)
+
+        case _ ⇒
+          loading.remove(key)
+      }
+    }).asInstanceOf[Future[T]]
 
   protected def memcachedDeduplicate[T](key: String)(f: ⇒ T)(implicit ec: ExecutionContext, memClient: MemcachedClient): Option[T] =
     if (disabledMemoizeMemcached) Some(f) else {

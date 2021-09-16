@@ -14,7 +14,7 @@ trait MemcacheSupport {
 
   protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
-  private val loading = new ConcurrentHashMap[String, Future[Any]]()
+  private val cacheLoading = new ConcurrentHashMap[String, Future[Any]]()
 
   protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {
@@ -22,14 +22,14 @@ trait MemcacheSupport {
         if (result != null) {
           Future.fromTry(Try(JsonFormatter.deserialize[T](result.toString)))
         } else {
-          loading.computeIfAbsent(key, _ ⇒ {
+          cacheLoading.computeIfAbsent(key, _ ⇒ {
             f andThen {
               case Success(result) ⇒
                 memClient.set("memcached:" + key, timeout.toSeconds.toInt, JsonFormatter.serialize(result))
-                loading.remove(key)
+                cacheLoading.remove(key)
 
               case _ ⇒
-                loading.remove(key)
+                cacheLoading.remove(key)
             }
           }).asInstanceOf[Future[T]]
         }
@@ -54,14 +54,14 @@ trait MemcacheSupport {
     }
 
   private def renewLazyCache[T: Manifest](key: String, timeout: Duration, f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
-    loading.computeIfAbsent(key, _ ⇒ {
+    cacheLoading.computeIfAbsent(key, _ ⇒ {
       f andThen {
         case Success(result) ⇒
           memClient.set("memcached:" + key, timeout.toSeconds.toInt * 2, JsonFormatter.serialize(CachedObject(result, System.currentTimeMillis() + timeout.toMillis)))
-          loading.remove(key)
+          cacheLoading.remove(key)
 
         case _ ⇒
-          loading.remove(key)
+          cacheLoading.remove(key)
       }
     }).asInstanceOf[Future[T]]
 

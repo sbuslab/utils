@@ -27,6 +27,29 @@ trait MemcacheSupport {
       }
     }
 
+  protected def memcachedLazy[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
+    if (disabledMemoizeMemcached) f else {
+      memClient.asyncGet("memcached:" + key) flatMap { result ⇒
+        if (result != null) {
+          Future.fromTry(Try(JsonFormatter.deserialize[CachedObject[T]](result.toString))) map { cachedObject ⇒
+            if (cachedObject.exp < System.currentTimeMillis()) {
+              renewLazyCache(key, timeout, f)  // update cache asynchronously
+            }
+
+            cachedObject.obj
+          }
+        } else {
+          renewLazyCache(key, timeout, f)
+        }
+      }
+    }
+
+  private def renewLazyCache[T: Manifest](key: String, timeout: Duration, f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
+    f andThen {
+      case Success(result) ⇒
+        memClient.set("memcached:" + key, timeout.toSeconds.toInt * 2, JsonFormatter.serialize(CachedObject(result, System.currentTimeMillis() + timeout.toMillis)))
+    }
+
   protected def memcachedDeduplicate[T](key: String)(f: ⇒ T)(implicit ec: ExecutionContext, memClient: MemcachedClient): Option[T] =
     if (disabledMemoizeMemcached) Some(f) else {
       if (memClient.get("dedup:" + key) == null) {
@@ -96,3 +119,6 @@ trait MemcacheSupport {
     promise.future
   }
 }
+
+
+case class CachedObject[T](obj: T, exp: Long)

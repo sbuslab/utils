@@ -31,6 +31,7 @@ public class DbMigration {
                     conf.getString("password")
                 )
                 .ignoreFutureMigrations(true)
+                .ignoreMissingMigrations(true)
                 .baselineOnMigrate(true)
                 .outOfOrder(true);
 

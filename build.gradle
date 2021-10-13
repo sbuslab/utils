@@ -88,7 +88,7 @@ dependencies {
     compile 'commons-lang:commons-lang:2.6'
     compile 'commons-codec:commons-codec:1.13'
 
-    compile 'org.flywaydb:flyway-core:6.0.7'
+    compile 'org.flywaydb:flyway-core:7.15.0'
     compile 'javax.transaction:jta:1.1'
     compile 'javax.xml.bind:jaxb-api:2.2.11'
 

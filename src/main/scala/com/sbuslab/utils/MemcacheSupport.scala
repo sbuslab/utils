@@ -2,7 +2,7 @@ package com.sbuslab.utils
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.util.{Success, Try}
 import scala.util.control.NonFatal
 
@@ -15,6 +15,8 @@ trait MemcacheSupport {
   protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
 
   private val cacheLoading = new ConcurrentHashMap[String, Future[Any]]()
+
+  private val fallbackMaxTtl = 1.day
 
   protected def memcached[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext, memClient: MemcachedClient): Future[T] =
     if (disabledMemoizeMemcached) f else {
@@ -78,7 +80,7 @@ trait MemcacheSupport {
       (try f catch {
         case NonFatal(e) ⇒ Future.failed(e)
       }) andThen {
-        case Success(result) ⇒ memClient.set("fallback:" + key, 0, JsonFormatter.serialize(result))
+        case Success(result) ⇒ memClient.set("fallback:" + key, fallbackMaxTtl.toSeconds.toInt, JsonFormatter.serialize(result))
       } recoverWith {
         case NonFatal(e) ⇒
           memClient.asyncGet("fallback:" + key) flatMap {

@@ -6,6 +6,8 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
+import net.spy.memcached.MemcachedClient
+
 
 trait Memoize {
 
@@ -13,6 +15,8 @@ trait Memoize {
 
   private val memoizeCache = new ConcurrentHashMap[String, CachedObject]()
   private val disabledMemoizeCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+
+  private val fallbackMaxTtl = 1.day
 
   def memoize[T](key: String, timeout: Duration)(f: ⇒ T)(implicit ec: ExecutionContext): T =
     memoizeCache.compute(key, (_, exist) ⇒ {
@@ -35,7 +39,7 @@ trait Memoize {
       (try f catch {
         case NonFatal(e) ⇒ Future.failed(e)
       }) andThen {
-        case Success(result) ⇒ memoizeCache.put("fallback:" + key, CachedObject(0, result))
+        case Success(result) ⇒ memoizeCache.put("fallback:" + key, CachedObject(System.currentTimeMillis() + fallbackMaxTtl.toMillis, result))
       } recover {
         case NonFatal(e) ⇒
           memoizeCache.get("fallback:" + key) match {
@@ -43,6 +47,11 @@ trait Memoize {
             case result ⇒ result.obj.asInstanceOf[T]
           }
       }
+    }
+
+  def memoizeWithFallback[T: Manifest](key: String, timeout: Duration)(f: ⇒ Future[T])(implicit ec: ExecutionContext): Future[T] =
+    memoize(key, timeout) {
+      memoizeFallback(key)(f)
     }
 
   def memoizeClear(key: String): Unit =

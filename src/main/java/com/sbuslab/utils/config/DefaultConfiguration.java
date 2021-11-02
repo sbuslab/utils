@@ -151,8 +151,8 @@ public abstract class DefaultConfiguration {
     public Transport getSbusTransport(Config config, ObjectMapper mapper) {
         ActorSystem actorSystem = ActorSystem.create("sbus", config);
 
-        AuthProvider authProvider = config.getBoolean("sbus.auth.enabled")
-            ? new AuthProviderImpl(config.getConfig("sbus.auth"))
+        AuthProvider authProvider = config.getBoolean("sbus.auth.enabled") && !config.getString("sbus.auth.name").isBlank() && !config.getString("sbus.auth.private-key").isBlank()
+            ? new AuthProviderImpl(config.getConfig("sbus.auth"), mapper)
             : new NoopAuthProvider();
 
         return new TransportDispatcher(

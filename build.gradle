@@ -68,15 +68,15 @@ modifyPom {
 dependencies {
     compile 'com.sbuslab:sbus:[1.4.0,1.5.0)'
 
-	annotationProcessor 'org.projectlombok:lombok:1.18.10'
+	annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
-    compile 'com.typesafe:config:1.4.0'
+    compile 'com.typesafe:config:1.4.1'
 
     compile 'org.springframework.boot:spring-boot-starter-data-jpa:2.2.0.RELEASE'
 
-    compile 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.10.0'
-    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.10.0'
-    compile 'com.fasterxml.jackson.module:jackson-module-scala_2.12:2.10.0'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.13.0'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
+    compile 'com.fasterxml.jackson.module:jackson-module-scala_2.12:2.13.0'
 
     compile 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2'
     compile 'org.springframework:spring-jdbc:5.2.0.RELEASE'
@@ -92,9 +92,9 @@ dependencies {
     compile 'javax.transaction:jta:1.1'
     compile 'javax.xml.bind:jaxb-api:2.2.11'
 
-    compile 'org.postgresql:postgresql:42.2.8'
+    compile 'org.postgresql:postgresql:42.3.1'
 
-    compile 'org.asynchttpclient:async-http-client:2.10.4'
+    compile 'org.asynchttpclient:async-http-client:2.12.3'
 
     compile 'org.slf4j:slf4j-api:1.7.28'
     compile 'ch.qos.logback:logback-classic:1.2.3'
@@ -102,11 +102,13 @@ dependencies {
 
     compile 'net.spy:spymemcached:2.12.3'
 
-    compile 'io.prometheus:simpleclient_hotspot:0.8.0'
-    compile 'io.prometheus:simpleclient_httpserver:0.8.0'
-    compile 'io.prometheus:simpleclient_logback:0.8.0'
+    compile 'io.prometheus:simpleclient_hotspot:0.12.0'
+    compile 'io.prometheus:simpleclient_httpserver:0.12.0'
+    compile 'io.prometheus:simpleclient_logback:0.12.0'
 
-    compile 'org.bouncycastle:bcprov-jdk15to18:1.66'
+    compile 'org.bouncycastle:bcprov-jdk15to18:1.69'
+
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'

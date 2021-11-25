@@ -22,6 +22,17 @@ class JsonFormatterTest extends FunSuite {
 
     assert(JsonFormatter.serialize(o) == """{"name":"test1"}""")
   }
+
+  test("should deserialize boolean") {
+    val o = JsonFormatter.deserialize[TestBoolean]("""{"isActive":true,"isTest":true}""")
+    assert(o.isActive)
+    assert(o.getIsTest)
+  }
+
+  test("should serialize boolean") {
+    val o = JsonFormatter.serialize(new TestBoolean(true, true))
+    assert(o == """{"isTest":true,"isActive":true}""")
+  }
 }
 
 

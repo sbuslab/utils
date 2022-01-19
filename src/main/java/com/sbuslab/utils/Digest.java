@@ -12,7 +12,10 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.UUID;
 
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -309,6 +312,21 @@ public class Digest {
 
         public String getPrivateKey() {
             return privateKey;
+        }
+    }
+
+    public static GeneratedKeys generateEdDSAKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EdDSA", "EdDSA");
+            keyPairGenerator.initialize(EdDSANamedCurveTable.getByName("Ed25519"), SecureRandom.getInstanceStrong());
+
+            KeyPair pair = keyPairGenerator.generateKeyPair();
+
+            EdDSAPublicKey publicKey = (EdDSAPublicKey) pair.getPublic();
+            EdDSAPrivateKey privateKey = (EdDSAPrivateKey) pair.getPrivate();
+            return new GeneratedKeys(hex(publicKey.getAbyte()), hex(privateKey.getSeed()));
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
         }
     }
 

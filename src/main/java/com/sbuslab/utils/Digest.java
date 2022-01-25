@@ -4,6 +4,7 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -12,6 +13,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.UUID;
 
+import lombok.val;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -19,8 +21,16 @@ import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.ec.CustomNamedCurves;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 
 import com.sbuslab.utils.crypto.AesPbkdf2;
 
@@ -41,7 +51,7 @@ public class Digest {
     }
 
     public static String sha128(String message) {
-        return sha256(message.getBytes());
+        return sha128(message.getBytes());
     }
 
     public static String sha128(byte[] message) {
@@ -228,12 +238,16 @@ public class Digest {
         return Integer.toHexString(crc);
     }
 
-    private static String digest(String digestName, byte[] message) {
+    private static byte[] digestBytes(String digestName, byte[] message) {
         try {
-            return toHexString(MessageDigest.getInstance(digestName).digest(message));
+            return MessageDigest.getInstance(digestName).digest(message);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    private static String digest(String digestName, byte[] message) {
+        return toHexString(digestBytes(digestName, message));
     }
 
     private static String toHexString(byte[] bytes) {
@@ -329,5 +343,72 @@ public class Digest {
             throw new IllegalArgumentException(e);
         }
     }
+
+    public static GeneratedKeys generateECDSAKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+            keyPairGenerator.initialize(ECNamedCurveTable.getParameterSpec("secp256k1"), SecureRandom.getInstanceStrong());
+
+            KeyPair pair = keyPairGenerator.generateKeyPair();
+
+            BCECPublicKey publicKey = (BCECPublicKey) pair.getPublic();
+            BCECPrivateKey privateKey = (BCECPrivateKey) pair.getPrivate();
+
+            return new GeneratedKeys(hex(publicKey.getQ().getEncoded(true)), hex(bigIntegerToBytes(privateKey.getD(), 32)));
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static GeneratedKeys getECDSAKeyPairFromPrivate(String privateKey) {
+        try {
+            BigInteger privKey = new BigInteger(1, Hex.decodeHex(privateKey));
+
+            /*
+                * TODO: FixedPointCombMultiplier currently doesn't support scalars longer than the group
+                * order, but that could change in future versions.
+            */
+            if (privKey.bitLength() > ECDSA_CURVE_PARAMS.getN().bitLength()) {
+                privKey = privKey.mod(ECDSA_CURVE_PARAMS.getN());
+            }
+
+            ECPoint point = new FixedPointCombMultiplier().multiply(ECDSA_CURVE_PARAMS.getG(), privKey);
+
+            return new GeneratedKeys(hex(point.getEncoded(true)), privateKey);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    private static byte[] bigIntegerToBytes(BigInteger b, int numBytes) {
+        byte[] src = b.toByteArray();
+        byte[] dest = new byte[numBytes];
+        boolean isFirstByteOnlyForSign = src[0] == 0;
+        int length = isFirstByteOnlyForSign ? src.length - 1 : src.length;
+        int srcPos = isFirstByteOnlyForSign ? 1 : 0;
+        int destPos = numBytes - length;
+        System.arraycopy(src, srcPos, dest, destPos, length);
+        return dest;
+    }
+
+    /**
+        * 160 bits bitcoin hash, used mostly for address encoding
+        * hash160(input) = RIPEMD160(SHA256(input))
+        *
+        * @param input array of byte
+        * @return the 160 bits BTC hash of input
+    */
+    public static byte[] hash160(byte[] input) {
+        return digestBytes("RIPEMD160", digestBytes("SHA256", input));
+    }
+
+    private static final X9ECParameters ECDSA_CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1");
+
+    private static final ECDomainParameters ECDSA_CURVE =
+            new ECDomainParameters(
+                    ECDSA_CURVE_PARAMS.getCurve(),
+                    ECDSA_CURVE_PARAMS.getG(),
+                    ECDSA_CURVE_PARAMS.getN(),
+                    ECDSA_CURVE_PARAMS.getH());
 
 }

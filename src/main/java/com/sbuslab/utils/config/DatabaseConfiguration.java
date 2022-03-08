@@ -55,6 +55,8 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         hk.setPassword(conf.getString("password"));
         hk.setConnectionTimeout(conf.getInt("connection-timeout"));
         hk.setValidationTimeout(conf.getInt("validation-timeout"));
+        hk.setIdleTimeout(conf.getInt("idle-timeout"));
+        hk.setMaxLifetime(conf.getInt("max-lifetime"));
         hk.setMinimumIdle(conf.getInt("initial-size"));
         hk.setMaximumPoolSize(conf.getInt("max-active"));
         hk.setAutoCommit(conf.getBoolean("auto-commit"));

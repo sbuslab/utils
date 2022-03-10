@@ -21,6 +21,10 @@ object FutureHelpers extends FutureHelpers {
       for (result ← fr; r ← f(a)) yield result += r
     } map (_.result())
 
+  def serialWithFixedDelay[A, B](in: Seq[A], delay: FiniteDuration)(f: A ⇒ Future[B])(implicit system: ActorSystem, ec: ExecutionContext): Future[Seq[B]] =
+    in.foldLeft(Future.successful(Seq.newBuilder[B])) { case (fr, a) ⇒
+      for (result ← fr; r ← f(a); _ ← unitDelay(delay)) yield result += r
+    } map (_.result())
 
   /**
    * Executes series of batches of Futures those are executing in parallel.
@@ -54,6 +58,16 @@ object FutureHelpers extends FutureHelpers {
         case _ ⇒ Future.successful(buffer)
       }
     }
+
+  private def unitDelay(delay: FiniteDuration)(implicit system: ActorSystem, ec: ExecutionContext) = {
+    val p = Promise[Unit]()
+
+    system.scheduler.scheduleOnce(delay) {
+      p.success({})
+    }
+
+    p.future
+  }
 }
 
 

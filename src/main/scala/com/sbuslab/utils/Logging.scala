@@ -10,11 +10,18 @@ trait Logging {
 
   implicit case object CanLogSbusContext extends CanLog[Context] {
     override def logMessage(originalMsg: String, context: Context): String = {
+      val fields = context.customData
+
+      if (fields.nonEmpty) {
+        MDC.put("meta", JsonFormatter.serialize(fields))
+      }
+
       MDC.put("correlation_id", context.correlationId)
       originalMsg
     }
 
     override def afterLog(context: Context): Unit = {
+      MDC.remove("meta")
       MDC.remove("correlation_id")
     }
   }

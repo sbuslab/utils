@@ -22,7 +22,7 @@ import com.sbuslab.utils.FileUtils;
 public class ConfigLoader {
 
     public static Config load() {
-        String configPaths = System.getProperty("config.localfile",
+        String localConfigFiles = System.getProperty("config.localfile",
             Optional.ofNullable(System.getenv("SBUS_CONFIG_LOCALFILE")).orElse(""))
                 .replace("/", File.separator)
                 .replace("\\", File.separator);
@@ -43,9 +43,9 @@ public class ConfigLoader {
 
         Config resultConfig = ConfigFactory.load();
 
-        for (String path : configPaths.split(":")) {
+        for (String filePath : localConfigFiles.split(":")) {
             try {
-                File file = new File(FileUtils.getFileUrl(path).toURI());
+                File file = new File(FileUtils.getFileUrl(filePath).toURI());
 
                 if (!file.exists()) {
                     log.warn(file.getAbsolutePath() + " is not found, skip");
@@ -53,9 +53,11 @@ public class ConfigLoader {
                     resultConfig = ConfigFactory.parseFile(file).withFallback(resultConfig).resolve();
                 }
             } catch (FileNotFoundException | URISyntaxException e) {
-                log.warn(path + " is not found, skip");
+                log.warn(filePath + " is not found, skip");
             }
         }
+
+        resultConfig = ConfigFactory.defaultOverrides().withFallback(resultConfig).resolve();
 
         String extraConfigUrl = resultConfig.getString("sbuslab.config.external-url");
 

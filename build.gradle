@@ -79,7 +79,7 @@ dependencies {
     compile 'com.fasterxml.jackson.module:jackson-module-scala_2.12:2.13.0'
 
     compile 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2'
-    compile 'org.springframework:spring-jdbc:5.2.0.RELEASE'
+    compile 'org.springframework:spring-jdbc:5.2.20.RELEASE'
 
     compile 'javax.validation:validation-api:2.0.1.Final'
     compile 'org.reflections:reflections:0.9.12'
@@ -101,6 +101,7 @@ dependencies {
     runtime 'net.logstash.logback:logstash-logback-encoder:6.2'
 
     compile 'net.spy:spymemcached:2.12.3'
+    compile 'io.lettuce:lettuce-core:6.1.8.RELEASE'
 
     compile 'io.prometheus:simpleclient_hotspot:0.12.0'
     compile 'io.prometheus:simpleclient_httpserver:0.12.0'

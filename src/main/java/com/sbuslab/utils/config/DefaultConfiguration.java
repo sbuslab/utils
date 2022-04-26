@@ -78,7 +78,7 @@ public abstract class DefaultConfiguration {
 
     @EventListener({ContextRefreshedEvent.class})
     public void initPrometheusExporter() {
-        Config conf = getConfig().getConfig("prometheus.exporter");
+        Config conf = config.getConfig("prometheus.exporter");
 
         if (conf.getBoolean("enabled")) {
             log.info("Start prometheus HTTPServer on {}", conf.getInt("port"));
@@ -95,7 +95,7 @@ public abstract class DefaultConfiguration {
 
     @PostConstruct
     public void reconfigureLoggers() {
-        getConfig().getObject("sbuslab.loggers").forEach((key, value) -> {
+        config.getObject("sbuslab.loggers").forEach((key, value) -> {
             org.slf4j.Logger logger = LoggerFactory.getLogger(key);
 
             if (logger instanceof ch.qos.logback.classic.Logger) {

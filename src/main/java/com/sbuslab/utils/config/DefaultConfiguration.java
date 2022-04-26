@@ -64,7 +64,7 @@ public abstract class DefaultConfiguration {
 
     protected static final org.slf4j.Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
 
-    private final Config config = ConfigLoader.load();
+    private final Config config = ConfigLoader.INSTANCE;
 
     @Bean
     public Config getConfig() {

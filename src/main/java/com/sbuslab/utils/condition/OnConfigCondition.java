@@ -24,7 +24,7 @@ import com.sbuslab.utils.config.ConfigLoader;
 @Order(Ordered.HIGHEST_PRECEDENCE + 40)
 class OnConfigCondition extends SpringBootCondition {
 
-    private final Config config = ConfigLoader.load();
+    private final Config config = ConfigLoader.INSTANCE;
 
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {

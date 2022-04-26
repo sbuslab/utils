@@ -21,7 +21,9 @@ import com.sbuslab.utils.FileUtils;
 @Slf4j
 public class ConfigLoader {
 
-    public static Config load() {
+    public final static Config INSTANCE = load();
+
+    private static Config load() {
         String localConfigFiles = System.getProperty("config.localfile",
             Optional.ofNullable(System.getenv("SBUS_CONFIG_LOCALFILE")).orElse(""))
                 .replace("/", File.separator)

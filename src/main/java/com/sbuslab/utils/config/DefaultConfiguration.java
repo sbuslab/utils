@@ -20,9 +20,9 @@ import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
-import io.lettuce.core.RedisClient;
+import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import net.spy.memcached.*;
@@ -151,13 +151,24 @@ public abstract class DefaultConfiguration {
     @Bean
     @Lazy
     @Autowired
-    public StatefulRedisConnection<String, String> getRedisClient() {
+    public StatefulRedisClusterConnection<String, String> getRedisClient() {
         Config conf = config.getConfig("sbuslab.redis");
 
-        RedisClient client = RedisClient.create(RedisURI.create(conf.getString("host"), conf.getInt("port")));
-        StatefulRedisConnection<String, String> connection = client.connect();
+        RedisURI redisURI = RedisURI.Builder.redis(conf.getString("host"))
+            .withSsl(conf.getBoolean("ssl"))
+            .withVerifyPeer(false)
+            .build();
+
+        if (conf.hasPath("user") && conf.hasPath("password")) {
+            redisURI.setUsername(conf.getString("user"));
+            redisURI.setPassword(conf.getString("password").toCharArray());
+        }
+
+        RedisClusterClient clusterClient = RedisClusterClient.create(redisURI);
+        StatefulRedisClusterConnection<String, String> connection = clusterClient.connect();
         return connection;
     }
+
 
     @Bean
     @Lazy

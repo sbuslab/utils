@@ -20,6 +20,9 @@ import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.api.StatefulRedisConnection;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import net.spy.memcached.*;
@@ -61,7 +64,7 @@ public abstract class DefaultConfiguration {
 
     protected static final org.slf4j.Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
 
-    private final Config config = ConfigLoader.load();
+    private final Config config = ConfigLoader.INSTANCE;
 
     @Bean
     public Config getConfig() {
@@ -143,6 +146,17 @@ public abstract class DefaultConfiguration {
             .setProtocol(ConnectionFactoryBuilder.Protocol.BINARY);
 
         return new MemcachedClient(builder.build(), AddrUtil.getAddresses(conf.getStringList("hosts")));
+    }
+
+    @Bean
+    @Lazy
+    @Autowired
+    public StatefulRedisConnection<String, String> getRedisClient() {
+        Config conf = config.getConfig("sbuslab.redis");
+
+        RedisClient client = RedisClient.create(RedisURI.create(conf.getString("host"), conf.getInt("port")));
+        StatefulRedisConnection<String, String> connection = client.connect();
+        return connection;
     }
 
     @Bean

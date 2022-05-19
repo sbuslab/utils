@@ -48,8 +48,12 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     }
 
     protected DataSource makeDatasource(Config conf, int port) {
+        return makeDatasource(conf, null, port);
+    }
+
+    protected DataSource makeDatasource(Config conf, String hostOverwrite, int port) {
         HikariConfig hk = new HikariConfig();
-        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), conf.getString("host"), port, conf.getString("db")));
+        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), hostOverwrite != null ? hostOverwrite : conf.getString("host"), port, conf.getString("db")));
         hk.setDriverClassName(conf.getString("driverClassName"));
         hk.setUsername(conf.getString("username"));
         hk.setPassword(conf.getString("password"));
@@ -101,7 +105,7 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     @DependsOn("dbMigrations")
     public NamedParameterJdbcTemplate getReadonlyJdbcTemplate() {
         Config conf = getDbConfig();
-        return new NamedParameterJdbcTemplate(makeDatasource(conf, conf.getInt("readonly-port")));
+        return new NamedParameterJdbcTemplate(makeDatasource(conf, conf.hasPath("readonly-host") ? conf.getString("readonly-host") : null, conf.getInt("readonly-port")));
     }
 
     @Bean

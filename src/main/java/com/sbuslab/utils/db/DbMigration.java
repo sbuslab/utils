@@ -49,7 +49,7 @@ public class DbMigration {
 
         } catch (FlywayException ex) {
             log.error("Migrations error: " + ex.getMessage());
-            throw new RuntimeException("Exception during database migrations: " + ex.getMessage(), ex);
+            throw new ExceptionInInitializerError(ex);
         }
     }
 }

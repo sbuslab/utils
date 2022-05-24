@@ -15,13 +15,14 @@ import java.util.stream.Collectors;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
-import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.RedisURI;
+import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
@@ -36,8 +37,8 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -62,13 +63,11 @@ import com.sbuslab.utils.json.JsonMapperFactory;
 @EnableAspectJAutoProxy
 public abstract class DefaultConfiguration {
 
-    protected static final org.slf4j.Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
+    protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
 
-    private final Config config = ConfigLoader.INSTANCE;
-
-    @Bean
+    @Bean(name = "config")
     public Config getConfig() {
-        return config;
+        return ConfigLoader.INSTANCE;
     }
 
     @Bean
@@ -77,9 +76,9 @@ public abstract class DefaultConfiguration {
     }
 
     @EventListener({ContextRefreshedEvent.class})
-    public void initPrometheusExporter() {
-        Config conf = config.getConfig("prometheus.exporter");
-
+    public void initPrometheusExporter(ContextRefreshedEvent event) {
+        Config baseConfig = event.getApplicationContext().getBean(Config.class);
+        Config conf = baseConfig.getConfig("prometheus.exporter");
         if (conf.getBoolean("enabled")) {
             log.info("Start prometheus HTTPServer on {}", conf.getInt("port"));
 
@@ -95,8 +94,8 @@ public abstract class DefaultConfiguration {
 
     @PostConstruct
     public void reconfigureLoggers() {
-        config.getObject("sbuslab.loggers").forEach((key, value) -> {
-            org.slf4j.Logger logger = LoggerFactory.getLogger(key);
+        getConfig().getObject("sbuslab.loggers").forEach((key, value) -> {
+            Logger logger = LoggerFactory.getLogger(key);
 
             if (logger instanceof ch.qos.logback.classic.Logger) {
                 ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(value.atPath("/").getString("/"), Level.INFO));
@@ -106,8 +105,7 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Lazy
-    @Autowired
-    public AsyncHttpClient getAsyncHttpClient(Config config) {
+    public static AsyncHttpClient getAsyncHttpClient(Config config) {
         Config conf = config.getConfig("sbuslab.http-client");
 
         DefaultAsyncHttpClientConfig.Builder bldr = Dsl.config()
@@ -131,7 +129,6 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Lazy
-    @Autowired
     public MemcachedClient getMemcachedClient(Config config) throws IOException {
         Config conf = config.getConfig("sbuslab.memcache");
 
@@ -150,8 +147,7 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Lazy
-    @Autowired
-    public StatefulRedisClusterConnection<String, String> getRedisClient() {
+    public static StatefulRedisClusterConnection<String, String> getRedisClient(Config config) {
         Config conf = config.getConfig("sbuslab.redis");
 
         RedisURI redisURI = RedisURI.Builder.redis(conf.getString("host"))
@@ -172,7 +168,6 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Lazy
-    @Autowired
     public Transport getSbusTransport(Config config, ObjectMapper mapper) {
         ActorSystem actorSystem = ActorSystem.create("sbus", config);
 
@@ -201,21 +196,18 @@ public abstract class DefaultConfiguration {
 
     @Bean
     @Lazy
-    @Autowired
     public Sbus getJavaSbus(Transport transport) {
         return new Sbus(transport);
     }
 
     @Bean
     @Lazy
-    @Autowired
     public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, ExecutionContext ec) {
         return new com.sbuslab.sbus.Sbus(transport, ec);
     }
 
     @Bean
-    @Autowired
-    public Reflections initSbusSubscriptions(ApplicationContext appContext, Config config) {
+    public static Reflections initSbusSubscriptions(ApplicationContext appContext, Config config) {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
         String packageToScan = config.getString("sbus.package-to-scan");
@@ -231,7 +223,7 @@ public abstract class DefaultConfiguration {
                 return; // skip interfaces without implementations
             }
 
-            Sbus sbus     = appContext.getBean(Sbus.class);
+            Sbus sbus = appContext.getBean(Sbus.class);
             Object parent = appContext.getBean(method.getDeclaringClass());
             Subscribe ann = method.getAnnotation(Subscribe.class);
 
@@ -251,7 +243,8 @@ public abstract class DefaultConfiguration {
 
                         try {
                             errors = validator.validate(req);
-                        } catch (ArrayIndexOutOfBoundsException ignored) {}
+                        } catch (ArrayIndexOutOfBoundsException ignored) {
+                        }
 
                         if (!errors.isEmpty()) {
                             BadRequestError ex = new BadRequestError(errors.stream().map(e ->
@@ -303,9 +296,9 @@ public abstract class DefaultConfiguration {
                     Schedule schedule = method.getAnnotation(Schedule.class);
 
                     sbus.command("scheduler.schedule", ScheduleCommand.builder()
-                      .period(scala.concurrent.duration.FiniteDuration.apply(schedule.value()).toMillis())
-                      .routingKey(routingKey)
-                      .build());
+                        .period(FiniteDuration.apply(schedule.value()).toMillis())
+                        .routingKey(routingKey)
+                        .build());
                 }
             }
         });

@@ -14,7 +14,7 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -23,6 +23,8 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import static com.typesafe.config.ConfigValueFactory.fromAnyRef;
 
 import com.sbuslab.utils.db.DbMigration;
 import com.sbuslab.utils.db.EntitiesSqlFields;
@@ -33,27 +35,32 @@ import com.sbuslab.utils.db.WithQueryBuilder;
 @Configuration
 public abstract class DatabaseConfiguration extends DefaultConfiguration {
 
+    @Bean(name = {"dbConfig"})
     abstract protected Config getDbConfig();
 
     @Bean(initMethod = "run")
-    public DbMigration dbMigrations() {
-        return new DbMigration(getDbConfig());
+    public static DbMigration dbMigrations(@Qualifier("dbConfig") Config dbConfig) {
+        return new DbMigration(dbConfig);
     }
 
     @Bean
     @DependsOn("dbMigrations")
-    public DataSource getDatasource() {
-        Config conf = getDbConfig();
-        return makeDatasource(conf, conf.getInt("port"));
+    public static DataSource getDatasource(@Qualifier("dbConfig") Config dbConfig) {
+        return createDatasource(dbConfig);
     }
 
+    /**
+     * @deprecated use {#createDatasource} instead
+     */
+    @Deprecated
     protected DataSource makeDatasource(Config conf, int port) {
-        return makeDatasource(conf, null, port);
+        return createDatasource(conf.withValue("port", fromAnyRef(port)));
     }
 
-    protected DataSource makeDatasource(Config conf, String hostOverwrite, int port) {
+    protected static DataSource createDatasource(Config conf) {
         HikariConfig hk = new HikariConfig();
-        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"), hostOverwrite != null ? hostOverwrite : conf.getString("host"), port, conf.getString("db")));
+        hk.setJdbcUrl(String.format("jdbc:%s://%s:%d/%s", conf.getString("driver"),
+            conf.getString("host"), conf.getInt("port"), conf.getString("db")));
         hk.setDriverClassName(conf.getString("driverClassName"));
         hk.setUsername(conf.getString("username"));
         hk.setPassword(conf.getString("password"));
@@ -70,9 +77,8 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     }
 
     @Bean
-    @Autowired
-    public Reflections initDbQueryBuilders(ApplicationContext appContext) {
-        List<String> packages = getDbConfig().getStringList("packages-to-scan");
+    public static Reflections initDbQueryBuilders(ApplicationContext appContext, @Qualifier("dbConfig") Config dbConfig) {
+        List<String> packages = dbConfig.getStringList("packages-to-scan");
         List<URL> urls = new ArrayList<>();
         packages.forEach(p -> urls.addAll(ClasspathHelper.forPackage(p)));
 
@@ -94,32 +100,33 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
 
     @Bean
     @Primary
-    @Autowired
     @DependsOn("dbMigrations")
-    public NamedParameterJdbcTemplate getJdbcTemplate(DataSource datasource) {
+    public static NamedParameterJdbcTemplate getJdbcTemplate(DataSource datasource) {
         return new NamedParameterJdbcTemplate(datasource);
     }
 
     @Lazy
     @Bean(name = "readOnlyJdbc")
     @DependsOn("dbMigrations")
-    public NamedParameterJdbcTemplate getReadonlyJdbcTemplate() {
-        Config conf = getDbConfig();
-        return new NamedParameterJdbcTemplate(makeDatasource(conf, conf.hasPath("readonly-host") ? conf.getString("readonly-host") : null, conf.getInt("readonly-port")));
+    public static NamedParameterJdbcTemplate getReadonlyJdbcTemplate(@Qualifier("dbConfig") Config dbConfig) {
+        if (dbConfig.hasPath("readonly-host")) {
+            dbConfig = dbConfig.withValue("host", fromAnyRef(dbConfig.getString("readonly-host")));
+        }
+        dbConfig = dbConfig.withValue("port", fromAnyRef(dbConfig.getString("readonly-port")));
+        return new NamedParameterJdbcTemplate(createDatasource(dbConfig));
     }
 
     @Bean
-    @Autowired
     @DependsOn("dbMigrations")
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource) {
+    public static LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource, @Qualifier("dbConfig") Config dbConfig) {
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         Properties props = new Properties();
-        Config dbConfig = getDbConfig().getConfig("hibernate");
-        dbConfig.entrySet().forEach(entry -> props.put(entry.getKey(), entry.getValue().unwrapped()));
+        Config hibernateConfig = dbConfig.getConfig("hibernate");
+        hibernateConfig.entrySet().forEach(entry -> props.put(entry.getKey(), entry.getValue().unwrapped()));
 
-        factory.setPackagesToScan(getDbConfig().getStringList("packages-to-scan").toArray(new String[0]));
+        factory.setPackagesToScan(dbConfig.getStringList("packages-to-scan").toArray(new String[0]));
         factory.setJpaProperties(props);
 
         factory.setDataSource(datasource);
@@ -128,24 +135,21 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     }
 
     @Bean
-    @Autowired
     @DependsOn("dbMigrations")
-    public PlatformTransactionManager transactionManager(DataSource datasource) {
+    public static PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean entityManagerFactory) {
         JpaTransactionManager txManager = new JpaTransactionManager();
-        txManager.setEntityManagerFactory(entityManagerFactory(datasource).getObject());
+        txManager.setEntityManagerFactory(entityManagerFactory.getObject());
         return txManager;
     }
 
     @Bean
-    @Autowired
     @DependsOn("dbMigrations")
-    public JdbcUtils jdbcUtils(DataSource datasource) {
+    public static JdbcUtils jdbcUtils(DataSource datasource) {
         return new JdbcUtils(datasource);
     }
 
     @Bean
-    @Autowired
-    public TransactionTemplate transactionTemplate(PlatformTransactionManager ptm) {
+    public static TransactionTemplate transactionTemplate(PlatformTransactionManager ptm) {
         return new TransactionTemplate(ptm);
     }
 }

@@ -40,10 +40,7 @@ import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
@@ -65,6 +62,7 @@ public abstract class DefaultConfiguration {
 
     protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
 
+    @Primary
     @Bean(name = "config")
     public Config getConfig() {
         return ConfigLoader.INSTANCE;

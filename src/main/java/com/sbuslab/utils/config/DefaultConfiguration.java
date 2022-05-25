@@ -39,7 +39,9 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -58,14 +60,22 @@ import com.sbuslab.utils.json.JsonMapperFactory;
 
 @ComponentScan("com.sbuslab")
 @EnableAspectJAutoProxy
-public abstract class DefaultConfiguration {
+public abstract class DefaultConfiguration implements ApplicationContextAware {
 
     protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
+    private static ApplicationContext context;
 
-    @Primary
     @Bean(name = "config")
-    public Config getConfig() {
+    public Config getConfigBean() {
         return ConfigLoader.INSTANCE;
+    }
+
+    public Config getConfig() {
+        ApplicationContext ctx = context;
+        if (ctx == null) {
+            throw new IllegalStateException("Context was not set");
+        }
+        return ctx.getBean(Config.class);
     }
 
     @Bean
@@ -302,5 +312,10 @@ public abstract class DefaultConfiguration {
         });
 
         return reflections;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext ac) throws BeansException {
+        context = ac;
     }
 }

@@ -14,8 +14,6 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -35,18 +33,17 @@ import com.sbuslab.utils.db.WithQueryBuilder;
 @Configuration
 public abstract class DatabaseConfiguration extends DefaultConfiguration {
 
-    @Bean(name = {"dbConfig"})
-    abstract protected Config getDbConfig();
+    protected abstract Config getDbConfig();
 
     @Bean(initMethod = "run")
-    public static DbMigration dbMigrations(@Qualifier("dbConfig") Config dbConfig) {
-        return new DbMigration(dbConfig);
+    public DbMigration dbMigrations() {
+        return new DbMigration(getDbConfig());
     }
 
     @Bean
     @DependsOn("dbMigrations")
-    public static DataSource getDatasource(@Qualifier("dbConfig") Config dbConfig) {
-        return createDatasource(dbConfig);
+    public DataSource getDatasource() {
+        return createDatasource(getDbConfig());
     }
 
     /**
@@ -77,8 +74,8 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     }
 
     @Bean
-    public static Reflections initDbQueryBuilders(ApplicationContext appContext, @Qualifier("dbConfig") Config dbConfig) {
-        List<String> packages = dbConfig.getStringList("packages-to-scan");
+    public Reflections initDbQueryBuilders(EntitiesSqlFields esf) {
+        List<String> packages = getDbConfig().getStringList("packages-to-scan");
         List<URL> urls = new ArrayList<>();
         packages.forEach(p -> urls.addAll(ClasspathHelper.forPackage(p)));
 
@@ -88,7 +85,6 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
                 .filterInputsBy(new FilterBuilder().includePackage(packages.toArray(new String[0])))
                 .setScanners(new MethodAnnotationsScanner()));
 
-        EntitiesSqlFields esf = appContext.getBean(EntitiesSqlFields.class);
         reflections.getMethodsAnnotatedWith(WithQueryBuilder.class).forEach(method -> {
             WithQueryBuilder ann = method.getAnnotation(WithQueryBuilder.class);
             String parentName = method.getDeclaringClass().getCanonicalName();
@@ -108,7 +104,8 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     @Lazy
     @Bean(name = "readOnlyJdbc")
     @DependsOn("dbMigrations")
-    public static NamedParameterJdbcTemplate getReadonlyJdbcTemplate(@Qualifier("dbConfig") Config dbConfig) {
+    public NamedParameterJdbcTemplate getReadonlyJdbcTemplate() {
+        Config dbConfig = getDbConfig();
         if (dbConfig.hasPath("readonly-host")) {
             dbConfig = dbConfig.withValue("host", fromAnyRef(dbConfig.getString("readonly-host")));
         }
@@ -118,7 +115,8 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
 
     @Bean
     @DependsOn("dbMigrations")
-    public static LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource, @Qualifier("dbConfig") Config dbConfig) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource) {
+        Config dbConfig = getDbConfig();
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
@@ -151,5 +149,18 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
     @Bean
     public static TransactionTemplate transactionTemplate(PlatformTransactionManager ptm) {
         return new TransactionTemplate(ptm);
+    }
+
+    public abstract static class of extends DatabaseConfiguration {
+        private final String dbConfigPath;
+
+        public of(String dbConfigPath) {
+            this.dbConfigPath = dbConfigPath;
+        }
+
+        @Override
+        protected final Config getDbConfig() {
+            return getConfig().getConfig(dbConfigPath);
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.sbuslab.utils.config;
 
-import javax.annotation.PostConstruct;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -42,7 +41,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
@@ -100,9 +102,10 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         }
     }
 
-    @PostConstruct
-    public void reconfigureLoggers() {
-        getConfig().getObject("sbuslab.loggers").forEach((key, value) -> {
+    @EventListener({ContextRefreshedEvent.class})
+    public void reconfigureLoggers(ContextRefreshedEvent event) {
+        Config config = event.getApplicationContext().getBean(Config.class);
+        config.getObject("sbuslab.loggers").forEach((key, value) -> {
             Logger logger = LoggerFactory.getLogger(key);
 
             if (logger instanceof ch.qos.logback.classic.Logger) {

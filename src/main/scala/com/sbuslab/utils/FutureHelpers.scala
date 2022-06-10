@@ -2,6 +2,7 @@ package com.sbuslab.utils
 
 import scala.language.higherKinds
 
+import java.util.UUID
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
@@ -12,9 +13,10 @@ import scala.util.control.NonFatal
 import akka.actor.ActorSystem
 
 import com.sbuslab.model.UnrecoverableFailures
+import com.sbuslab.sbus.Context
 
 
-object FutureHelpers extends FutureHelpers {
+object FutureHelpers extends FutureHelpers with Logging {
 
   def serial[A, B](in: Seq[A])(f: A ⇒ Future[B])(implicit ec: ExecutionContext): Future[Seq[B]] =
     in.foldLeft(Future.successful(Seq.newBuilder[B])) { case (fr, a) ⇒
@@ -25,6 +27,67 @@ object FutureHelpers extends FutureHelpers {
     in.foldLeft(Future.successful(Seq.newBuilder[B])) { case (fr, a) ⇒
       for (result ← fr; r ← f(a); _ ← unitDelay(delay)) yield result += r
     } map (_.result())
+
+
+  /**
+   * Schedule future execution in infinite loop with specified delay between each next run
+   * @param initialDelay - initial delay before run schedule
+   * @param delay - delay between futures execution
+   * @param f - function that return promise that we will repeat
+   * @param system
+   * @param ec
+   * @param context
+   */
+  def scheduleWithFixedDelay(
+    initialDelay: FiniteDuration,
+    delay: FiniteDuration
+  )(f: () ⇒ Future[Any]
+  )(implicit system: ActorSystem, ec: ExecutionContext, context: Context = Context.withCorrelationId(UUID.randomUUID().toString)): Unit =
+    system.scheduler.scheduleOnce(initialDelay) {
+      (try
+        f()
+      catch {
+        case e: Throwable ⇒ Future.failed(e)
+      }) recover {
+        case e: Throwable ⇒ slog.error(s"Error occurred while processing futureWithFixedDelay: ${e.getMessage}", e)
+      } onComplete { _ ⇒ system.scheduler.scheduleOnce(delay)(scheduleWithFixedDelay(0.seconds, delay)(f)) }
+    }
+
+  /**
+   * Schedule future execution in infinite loop with at least delay between each next run.
+   * E.G.:
+   * if delay is 10 ms and future executes 15 ms next one will start immideately after previous was executed
+   * if delay is 10 ms and future executes 3 ms next one will start after 7ms
+   * @param initialDelay - initial delay before run schedule
+   * @param delay - at least delay between futures execution
+   * @param f - function that return promise that we will repeat
+   * @param system
+   * @param ec
+   * @param context
+   */
+  def scheduleWithAtLeastDelay(
+    initialDelay: FiniteDuration,
+    delay: FiniteDuration
+  )(f: () ⇒ Future[Any]
+  )(implicit system: ActorSystem, ec: ExecutionContext, context: Context = Context.withCorrelationId(UUID.randomUUID().toString)): Unit =
+    system.scheduler.scheduleOnce(initialDelay) {
+      val p = Promise[Any]()
+
+      system.scheduler.scheduleOnce(delay) {
+        p.trySuccess((): Unit)
+      }
+
+      Future.sequence(List(
+        p.future,
+        try
+          f()
+        catch {
+          case e: Throwable ⇒ Future.failed(e)
+        }
+      )) recover {
+        case e: Throwable ⇒ slog.error(s"Error occurred while processing futureWithAtLeastDelay: ${e.getMessage}", e)
+      } onComplete { _ ⇒ scheduleWithAtLeastDelay(0.seconds, delay)(f) }
+    }
 
   /**
    * Executes series of batches of Futures those are executing in parallel.

@@ -2,13 +2,12 @@ package com.sbuslab.utils
 
 import java.util.concurrent.Executors
 import scala.collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import org.assertj.core.api.Assertions._
 import org.assertj.core.data.Offset
-import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
@@ -36,7 +35,7 @@ class FutureHelpersTest extends FunSuite {
     assertThat(finish - start).isCloseTo(2500L, Offset.offset[java.lang.Long](300L))
   }
 
-  test("test") {
+  test("should process future serial with fixed delay") {
     val start  = System.currentTimeMillis()
 
     val res = FutureHelpers.serialWithFixedDelay(List(1, 2, 3), delay = 100.millis) { n ⇒
@@ -47,5 +46,71 @@ class FutureHelpersTest extends FunSuite {
 
     assertThat(re.length == 3)
     assertThat(System.currentTimeMillis() - start >= 300)
+  }
+
+  test("should run infinite schedule with fixed delay") {
+    @volatile
+    var counts = 0
+
+    FutureHelpers.scheduleWithFixedDelay(0.millis, delay = 300.millis) { () ⇒
+      Future {
+        Thread.sleep(200)
+        counts += 1
+      }
+    }
+
+    val p = Promise[Any]()
+
+    as.scheduler.scheduleOnce(1200.millis) {
+      p.trySuccess((): Unit)
+    }
+
+    p.future map { _ ⇒
+      assertThat(counts = 2)
+    }
+  }
+
+  test("should run infinite schedule with atLeast delay - Future longer than delay") {
+    @volatile
+    var counts = 0
+
+    FutureHelpers.scheduleWithAtLeastDelay(0.millis, delay = 200.millis) { () ⇒
+      Future {
+        Thread.sleep(400)
+        counts += 1
+      }
+    }
+
+    val p = Promise[Any]()
+
+    as.scheduler.scheduleOnce(1300.millis) {
+      p.trySuccess((): Unit)
+    }
+
+    p.future map { _ ⇒
+      assertThat(counts = 3)
+    }
+  }
+
+    test("should run infinite schedule with atLeast delay - Future shorter than delay") {
+    @volatile
+    var counts = 0
+
+    FutureHelpers.scheduleWithAtLeastDelay(0.millis, delay = 400.millis) { () ⇒
+      Future {
+        Thread.sleep(200)
+        counts += 1
+      }
+    }
+
+    val p = Promise[Any]()
+
+    as.scheduler.scheduleOnce(1300.millis) {
+      p.trySuccess((): Unit)
+    }
+
+    p.future map { _ ⇒
+      assertThat(counts = 3)
+    }
   }
 }

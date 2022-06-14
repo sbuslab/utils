@@ -124,6 +124,7 @@ dependencies {
     api 'org.postgresql:postgresql:42.4.0'
 
     api 'org.asynchttpclient:async-http-client:2.12.3'
+    api 'io.netty:netty-codec:4.1.68.Final'
 
     api 'org.slf4j:slf4j-api:1.7.36'
     api 'ch.qos.logback:logback-classic:1.2.11'

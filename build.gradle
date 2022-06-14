@@ -1,9 +1,9 @@
 buildscript {
-  repositories {
-    maven {
-      url "https://plugins.gradle.org/m2/"
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
-  }
 }
 
 plugins {
@@ -38,7 +38,7 @@ if (this.parent == null) {
 }
 
 publishing {
-        publications {
+    publications {
         mavenJava(MavenPublication) {
             artifactId = 'utils'
             from components.java
@@ -97,7 +97,7 @@ publishing {
 dependencies {
     api 'com.sbuslab:sbus:[1.4.0,1.5.0)'
 
-	annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     api 'com.typesafe:config:1.4.2'
 
@@ -123,7 +123,10 @@ dependencies {
 
     api 'org.postgresql:postgresql:42.4.0'
 
-    api 'org.asynchttpclient:async-http-client:2.12.3'
+    api('org.asynchttpclient:async-http-client:2.12.3') {
+        exclude group: 'io.netty', module: 'netty-codec'
+    }
+
     api 'io.netty:netty-codec:4.1.68.Final'
 
     api 'org.slf4j:slf4j-api:1.7.36'

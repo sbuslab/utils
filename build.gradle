@@ -127,7 +127,7 @@ dependencies {
         exclude group: 'io.netty', module: 'netty-codec'
     }
 
-    api 'io.netty:netty-codec:4.1.68.Final'
+    api 'io.netty:netty-codec:4.1.78.Final'
 
     api 'org.slf4j:slf4j-api:1.7.36'
     api 'ch.qos.logback:logback-classic:1.2.11'

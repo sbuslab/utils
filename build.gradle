@@ -145,8 +145,8 @@ dependencies {
 
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.scalatest:scalatest_2.12:3.2.12'
+    testImplementation 'junit:junit:4.13.1'
+    testImplementation 'org.scalatest:scalatest_2.12:3.0.5'
     testImplementation 'org.assertj:assertj-core:3.23.1'
     testImplementation 'io.qala.datagen:qala-datagen:2.5.1'
 }

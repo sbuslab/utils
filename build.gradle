@@ -95,7 +95,7 @@ publishing {
 }
 
 dependencies {
-    api 'com.sbuslab:sbus:[1.4.0,1.5.0)'
+    api 'com.sbuslab:sbus:[1.5.0,1.6.0)'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 

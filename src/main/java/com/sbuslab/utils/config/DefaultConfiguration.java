@@ -52,6 +52,12 @@ import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.scheduler.ScheduleCommand;
 import com.sbuslab.sbus.*;
+import com.sbuslab.sbus.auth.AuthProvider;
+import com.sbuslab.sbus.auth.AuthProviderImpl;
+import com.sbuslab.sbus.auth.DynamicAuthConfigProvider;
+import com.sbuslab.sbus.auth.NoopAuthProvider;
+import com.sbuslab.sbus.auth.providers.ConsulAuthConfigProvider;
+import com.sbuslab.sbus.auth.providers.NoopDynamicProvider;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.kafka.KafkaTransport;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
@@ -181,9 +187,14 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     @Lazy
     public Transport getSbusTransport(Config config, ObjectMapper mapper) {
         ActorSystem actorSystem = ActorSystem.create("sbus", config);
+        Config authConfig = config.getConfig("sbus.auth");
 
-        AuthProvider authProvider = config.getBoolean("sbus.auth.enabled") && !config.getString("sbus.auth.name").isBlank() && !config.getString("sbus.auth.private-key").isBlank()
-            ? new AuthProviderImpl(config.getConfig("sbus.auth"), mapper)
+        DynamicAuthConfigProvider dynamicProvider = authConfig.getBoolean("consul.enabled")
+            ? new ConsulAuthConfigProvider(authConfig.getConfig("consul"), mapper)
+            : new NoopDynamicProvider();
+
+        AuthProvider authProvider = authConfig.getBoolean("enabled") && !authConfig.getString("name").isBlank() && !authConfig.getString("private-key").isBlank()
+            ? new AuthProviderImpl(authConfig, mapper, dynamicProvider)
             : new NoopAuthProvider();
 
         return new TransportDispatcher(

@@ -52,25 +52,25 @@ public class ConfigLoader {
                 if (!file.exists()) {
                     log.warn(file.getAbsolutePath() + " is not found, skip");
                 } else {
-                    resultConfig = ConfigFactory.parseFile(file).withFallback(resultConfig).resolve();
+                    resultConfig = ConfigFactory.parseFile(file).withFallback(resultConfig);
                 }
             } catch (FileNotFoundException | URISyntaxException e) {
                 log.warn(filePath + " is not found, skip");
             }
         }
 
-        resultConfig = ConfigFactory.defaultOverrides().withFallback(resultConfig).resolve();
+        resultConfig = ConfigFactory.defaultOverrides().withFallback(resultConfig);
 
         String extraConfigUrl = resultConfig.getString("sbuslab.config.external-url");
 
         if (!extraConfigUrl.isEmpty()) {
             try {
-                resultConfig = ConfigFactory.parseURL(new URL(extraConfigUrl)).withFallback(resultConfig).resolve();
+                resultConfig = ConfigFactory.parseURL(new URL(extraConfigUrl)).withFallback(resultConfig);
             } catch (Exception e) {
                 log.warn("Error on load external config from url: " + extraConfigUrl + ". " + e.getMessage(), e);
             }
         }
 
-        return resultConfig;
+        return resultConfig.resolve();
     }
 }

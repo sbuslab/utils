@@ -61,7 +61,7 @@ public class ConfigLoader {
 
         resultConfig = ConfigFactory.defaultOverrides().withFallback(resultConfig);
 
-        String extraConfigUrl = resultConfig.getString("sbuslab.config.external-url");
+        String extraConfigUrl = resultConfig.resolve().getString("sbuslab.config.external-url");
 
         if (!extraConfigUrl.isEmpty()) {
             try {

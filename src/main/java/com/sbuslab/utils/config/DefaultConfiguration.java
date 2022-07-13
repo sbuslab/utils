@@ -3,6 +3,7 @@ package com.sbuslab.utils.config;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import scala.Option;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
@@ -182,20 +184,28 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         return connection;
     }
 
+    @Bean
+    @Lazy
+    public DynamicAuthConfigProvider dynamicAuthConfigProvider(Config config, ObjectMapper objectMapper) {
+        return config.getBoolean("sbus.auth.consul.enabled")
+            ? new ConsulAuthConfigProvider(config.getConfig("sbus.auth.consul"), objectMapper)
+            : new NoopDynamicProvider();
+    }
 
     @Bean
     @Lazy
-    public Transport getSbusTransport(Config config, ObjectMapper mapper) {
-        ActorSystem actorSystem = ActorSystem.create("sbus", config);
-        Config authConfig = config.getConfig("sbus.auth");
-
-        DynamicAuthConfigProvider dynamicProvider = authConfig.getBoolean("consul.enabled")
-            ? new ConsulAuthConfigProvider(authConfig.getConfig("consul"), mapper)
-            : new NoopDynamicProvider();
-
-        AuthProvider authProvider = authConfig.getBoolean("enabled") && !authConfig.getString("name").isBlank() && !authConfig.getString("private-key").isBlank()
-            ? new AuthProviderImpl(authConfig, mapper, dynamicProvider)
+    public AuthProvider authProvider(Config config, ObjectMapper objectMapper, DynamicAuthConfigProvider dynamicProvider) {
+        return config.getBoolean("sbus.auth.enabled")
+               && !config.getString("sbus.auth.name").isBlank()
+               && !config.getString("sbus.auth.private-key").isBlank()
+            ? new AuthProviderImpl(config.getConfig("sbus.auth"), objectMapper, dynamicProvider)
             : new NoopAuthProvider();
+    }
+
+    @Bean
+    @Lazy
+    public Transport getSbusTransport(Config config, ObjectMapper mapper, AuthProvider authProvider) {
+        ActorSystem actorSystem = ActorSystem.create("sbus", config);
 
         return new TransportDispatcher(
             config.getConfig("sbus.transports.dispatcher"),
@@ -218,114 +228,122 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
 
     @Bean
     @Lazy
-    public Sbus getJavaSbus(Transport transport) {
-        return new Sbus(transport);
+    public Sbus getJavaSbus(Transport transport, AuthProvider authProvider) {
+        return new Sbus(transport, authProvider);
     }
 
     @Bean
     @Lazy
-    public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, ExecutionContext ec) {
-        return new com.sbuslab.sbus.Sbus(transport, ec);
+    public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, AuthProvider authProvider, ExecutionContext ec) {
+        return new com.sbuslab.sbus.Sbus(transport, authProvider, ec);
     }
 
     @Bean
     public static Reflections initSbusSubscriptions(ApplicationContext appContext, Config config) {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
 
-        String packageToScan = config.getString("sbus.package-to-scan");
+            String packageToScan = config.getString("sbus.package-to-scan");
 
-        Reflections reflections = new Reflections(
-            new ConfigurationBuilder()
-                .setUrls(ClasspathHelper.forPackage(packageToScan))
-                .filterInputsBy(new FilterBuilder().includePackage(packageToScan))
-                .setScanners(new MethodAnnotationsScanner()));
+            Reflections reflections = new Reflections(
+                new ConfigurationBuilder()
+                    .setUrls(ClasspathHelper.forPackage(packageToScan))
+                    .filterInputsBy(new FilterBuilder().includePackage(packageToScan))
+                    .setScanners(new MethodAnnotationsScanner()));
 
-        reflections.getMethodsAnnotatedWith(Subscribe.class).forEach(method -> {
-            if (method.getDeclaringClass().isInterface()) {
-                return; // skip interfaces without implementations
-            }
-
-            Sbus sbus = appContext.getBean(Sbus.class);
-            Object parent = appContext.getBean(method.getDeclaringClass());
-            Subscribe ann = method.getAnnotation(Subscribe.class);
-
-            boolean featured = CompletableFuture.class.isAssignableFrom(method.getReturnType());
-            boolean scalaFeatured = !featured && Future.class.isAssignableFrom(method.getReturnType());
-
-            if (method.getParameterCount() != 2 || !Context.class.isAssignableFrom(method.getParameterTypes()[1])) {
-                throw new RuntimeException("Method with @Subscribe must have second argument Context! " + method);
-            }
-
-            String[] routingKeys = ann.values().length > 0 ? ann.values() : new String[]{ann.value()};
-
-            for (String routingKey : routingKeys) {
-                sbus.on(routingKey, method.getParameterTypes()[0], (req, ctx) -> {
-                    if (req != null) {
-                        Set<? extends ConstraintViolation<?>> errors = new HashSet<>();
-
-                        try {
-                            errors = validator.validate(req);
-                        } catch (ArrayIndexOutOfBoundsException ignored) {
-                        }
-
-                        if (!errors.isEmpty()) {
-                            BadRequestError ex = new BadRequestError(errors.stream().map(e ->
-                                e.getPropertyPath() + " in " + e.getRootBeanClass().getSimpleName() + " " + e.getMessage()
-                            ).collect(Collectors.joining("; \n")), null, "validation-error");
-
-                            log.error("Sbus validation error: " + ex.getMessage(), ex);
-
-                            throw ex;
-                        }
-                    }
-
-                    if (featured || scalaFeatured) {
-                        try {
-                            if (scalaFeatured) {
-                                return FutureConverters
-                                    .toJava((Future<?>) method.invoke(parent, req, ctx))
-                                    .toCompletableFuture();
-                            } else {
-                                return (CompletableFuture<?>) method.invoke(parent, req, ctx);
-                            }
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            Throwable cause = e.getCause();
-
-                            if (cause instanceof ErrorMessage) {
-                                throw (ErrorMessage) e.getCause();
-                            } else {
-                                throw new RuntimeException(cause != null ? cause : e);
-                            }
-                        }
-                    }
-
-                    return CompletableFuture.supplyAsync(() -> {
-                        try {
-                            return method.invoke(parent, req, ctx);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            Throwable cause = e.getCause();
-
-                            if (cause instanceof ErrorMessage) {
-                                throw (ErrorMessage) e.getCause();
-                            } else {
-                                throw new RuntimeException(cause != null ? cause : e);
-                            }
-                        }
-                    });
-                });
-
-                if (method.isAnnotationPresent(Schedule.class)) {
-                    Schedule schedule = method.getAnnotation(Schedule.class);
-
-                    sbus.command("scheduler.schedule", ScheduleCommand.builder()
-                        .period(FiniteDuration.apply(schedule.value()).toMillis())
-                        .routingKey(routingKey)
-                        .build());
+            reflections.getMethodsAnnotatedWith(Subscribe.class).forEach(method -> {
+                if (method.getDeclaringClass().isInterface()) {
+                    return; // skip interfaces without implementations
                 }
-            }
-        });
 
-        return reflections;
+                Sbus sbus = appContext.getBean(Sbus.class);
+                Object parent = appContext.getBean(method.getDeclaringClass());
+                Subscribe ann = method.getAnnotation(Subscribe.class);
+
+                boolean featured = CompletableFuture.class.isAssignableFrom(method.getReturnType());
+                boolean scalaFeatured = !featured && Future.class.isAssignableFrom(method.getReturnType());
+
+                if (method.getParameterCount() != 2 || !Context.class.isAssignableFrom(method.getParameterTypes()[1])) {
+                    throw new RuntimeException("Method with @Subscribe must have second argument Context! " + method);
+                }
+
+                String[] routingKeys = ann.values().length > 0 ? ann.values() : new String[]{ann.value()};
+
+                for (String routingKey : routingKeys) {
+                    sbus.on(routingKey, method.getParameterTypes()[0], (req, ctx) -> {
+                        if (req != null) {
+                            Set<? extends ConstraintViolation<?>> errors = new HashSet<>();
+
+                            try {
+                                errors = validator.validate(req);
+                            } catch (ArrayIndexOutOfBoundsException ignored) {
+                            }
+
+                            if (!errors.isEmpty()) {
+                                BadRequestError ex = new BadRequestError(errors.stream().map(e ->
+                                    e.getPropertyPath() + " in " + e.getRootBeanClass().getSimpleName() + " " + e.getMessage()
+                                ).collect(Collectors.joining("; \n")), null, "validation-error");
+
+                                log.error("Sbus validation error: " + ex.getMessage(), ex);
+
+                                throw ex;
+                            }
+                        }
+
+                        if (featured || scalaFeatured) {
+                            try {
+                                if (scalaFeatured) {
+                                    return FutureConverters
+                                        .toJava((Future<?>) method.invoke(parent, req, ctx))
+                                        .toCompletableFuture();
+                                } else {
+                                    return (CompletableFuture<?>) method.invoke(parent, req, ctx);
+                                }
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                Throwable cause = e.getCause();
+
+                                if (cause instanceof ErrorMessage) {
+                                    throw (ErrorMessage) e.getCause();
+                                } else {
+                                    throw new RuntimeException(cause != null ? cause : e);
+                                }
+                            }
+                        }
+
+                        return CompletableFuture.supplyAsync(() -> {
+                            try {
+                                return method.invoke(parent, req, ctx);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                Throwable cause = e.getCause();
+
+                                if (cause instanceof ErrorMessage) {
+                                    throw (ErrorMessage) e.getCause();
+                                } else {
+                                    throw new RuntimeException(cause != null ? cause : e);
+                                }
+                            }
+                        });
+                    });
+
+                    if (method.isAnnotationPresent(Schedule.class)) {
+                        Schedule schedule = method.getAnnotation(Schedule.class);
+
+                        AuthProvider authProvider = appContext.getBean(AuthProvider.class);
+
+                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(routingKey), Option.empty());
+
+                        sbus.command("scheduler.schedule", ScheduleCommand.builder()
+                            .period(FiniteDuration.apply(schedule.value()).toMillis())
+                            .routingKey(routingKey)
+                            .origin(signedContext.origin())
+                            .signature(signedContext.signature())
+                            .build());
+                    }
+                }
+            });
+
+            return reflections;
+        }
     }
 
     @Override

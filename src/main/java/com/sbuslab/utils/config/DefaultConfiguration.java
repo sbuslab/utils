@@ -146,7 +146,7 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         if (!conf.getString("proxy.host").isEmpty()) {
             ProxyServer.Builder builder = new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
                 .setProxyType(ProxyType.HTTP);
-            List<String> nonProxyHostList = parseNonProxyHostsConfig(conf.getString("nonproxy-hosts"));
+            List<String> nonProxyHostList = parseNonProxyHostsConfig(conf.getString("proxy.nonproxy-hosts"));
             builder.setNonProxyHosts(nonProxyHostList);
             bldr.setProxyServer(builder);
         }

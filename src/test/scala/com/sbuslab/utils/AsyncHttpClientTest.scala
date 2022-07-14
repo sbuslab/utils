@@ -1,15 +1,13 @@
 package com.sbuslab.utils
 
-import co.copper.test.wiremock.WireMocking
-import com.github.tomakehurst.wiremock.{WireMockServer, client}
-import com.github.tomakehurst.wiremock.client.{WireMock, WireMockBuilder}
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.sbuslab.utils.config.DefaultConfiguration
 import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 @RunWith(classOf[JUnitRunner])
 class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {

@@ -150,5 +150,4 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.23.1'
     testImplementation 'io.qala.datagen:qala-datagen:2.5.1'
     testImplementation 'com.github.tomakehurst:wiremock-jre8:2.33.2'
-    testImplementation 'co.copper:common-test:1.0.+'
 }

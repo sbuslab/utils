@@ -155,7 +155,7 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     }
 
     private static List<String> parseNonProxyHostsConfig(String nonProxyHosts){
-        if(!StringUtils.hasLength(nonProxyHosts)){
+        if(!StringUtils.hasLength(nonProxyHosts)) {
             return Collections.emptyList();
         }
         String[] nonProxyHostsArray = nonProxyHosts.split("\\|");

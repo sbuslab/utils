@@ -14,9 +14,13 @@ class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
   val ProxyResponse: String = "i_am_proxy_server"
   val DummyServerResponse: String = "i_am_dummy_server"
 
+  // Start 2 http servers
+  // proxyServer act as proxy
   val proxyServer = new WireMockServer(options.dynamicPort())
+  // dummy http server refer to a regular server
   val dummyHttpServer = new WireMockServer(options.dynamicPort())
 
+  //in this case all http calls goes through proxyServer. We should see proxyServer response instead of actual server.
   test("verify that request goes through proxy") {
 
     val config = ConfigFactory.parseString(
@@ -35,6 +39,8 @@ class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
     assertResult(ProxyResponse) { response.getResponseBody }
   }
 
+  // in this case localhost is in non proxy hosts. So call goes directly to dummyHttpServer, proxy is ignored.
+  // we should see response from dummy http server instead of proxy.
   test("verify that proxy is ignored") {
 
     val config = ConfigFactory.parseString(

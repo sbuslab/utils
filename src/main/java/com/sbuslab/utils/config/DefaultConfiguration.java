@@ -6,12 +6,17 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.springframework.util.StringUtils;
 import scala.Option;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
@@ -139,11 +144,23 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {
-            bldr.setProxyServer(new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
-                .setProxyType(ProxyType.HTTP));
+            ProxyServer.Builder builder = new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
+                .setProxyType(ProxyType.HTTP);
+            List<String> nonProxyHostList = parseNonProxyHostsConfig(conf.getString("nonproxy-hosts"));
+            builder.setNonProxyHosts(nonProxyHostList);
+            bldr.setProxyServer(builder);
         }
 
         return Dsl.asyncHttpClient(bldr);
+    }
+
+    private static List<String> parseNonProxyHostsConfig(String nonProxyHosts){
+        if(!StringUtils.hasLength(nonProxyHosts)){
+            return Collections.emptyList();
+        }
+        String[] nonProxyHostsArray = nonProxyHosts.split("\\|");
+        List<String> nonProxyHostList= Arrays.stream(nonProxyHostsArray).collect(Collectors.toList());
+        return nonProxyHostList;
     }
 
     @Bean

@@ -144,11 +144,12 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {
-            ProxyServer.Builder builder = new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
+            ProxyServer.Builder proxyServerBuilder = new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
                 .setProxyType(ProxyType.HTTP);
             List<String> nonProxyHostList = parseNonProxyHostsConfig(conf.getString("proxy.nonproxy-hosts"));
-            builder.setNonProxyHosts(nonProxyHostList);
-            bldr.setProxyServer(builder);
+            proxyServerBuilder.setNonProxyHosts(nonProxyHostList);
+            ProxyServer proxyServer = proxyServerBuilder.build();
+            bldr.setProxyServer(proxyServer);
         }
 
         return Dsl.asyncHttpClient(bldr);

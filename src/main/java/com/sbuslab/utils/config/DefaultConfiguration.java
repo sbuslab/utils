@@ -159,7 +159,7 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             return Collections.emptyList();
         }
         String[] nonProxyHostsArray = nonProxyHosts.split("\\|");
-        List<String> nonProxyHostList= Arrays.stream(nonProxyHostsArray).collect(Collectors.toList());
+        List<String> nonProxyHostList= Arrays.stream(nonProxyHostsArray).map(host -> host.trim()).collect(Collectors.toList());
         return nonProxyHostList;
     }
 

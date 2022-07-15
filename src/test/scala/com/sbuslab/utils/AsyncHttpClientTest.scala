@@ -3,11 +3,13 @@ package com.sbuslab.utils
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
-import com.sbuslab.utils.config.DefaultConfiguration
 import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import org.scalatest.junit.JUnitRunner
+
+import com.sbuslab.utils.config.DefaultConfiguration
+
 
 @RunWith(classOf[JUnitRunner])
 class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
@@ -17,6 +19,7 @@ class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
   // Start 2 http servers
   // proxyServer act as proxy
   val proxyServer = new WireMockServer(options.dynamicPort())
+
   // dummy http server refer to a regular server
   val dummyHttpServer = new WireMockServer(options.dynamicPort())
 
@@ -28,7 +31,7 @@ class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
       |  sbuslab.http-client.proxy {
       |      host = "localhost"
       |      port = ${proxyServer.port()}
-      |      nonproxy-hosts = ""
+      |      non-proxy-hosts = []
       |   }
       |}""".stripMargin
   )
@@ -48,7 +51,7 @@ class AsyncHttpClientTest extends FunSuite with Logging with BeforeAndAfterAll {
       |  sbuslab.http-client.proxy {
       |      host = "localhost"
       |      port = ${proxyServer.port()}
-      |      nonproxy-hosts = "localhost|127.0.0.1"
+      |      non-proxy-hosts = ["localhost", "127.0.0.1"]
       |   }
       |}""".stripMargin
   )

@@ -6,17 +6,12 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import org.springframework.util.StringUtils;
 import scala.Option;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
@@ -58,7 +53,9 @@ import org.springframework.context.event.EventListener;
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.scheduler.ScheduleCommand;
-import com.sbuslab.sbus.*;
+import com.sbuslab.sbus.Context;
+import com.sbuslab.sbus.Transport;
+import com.sbuslab.sbus.TransportDispatcher;
 import com.sbuslab.sbus.auth.AuthProvider;
 import com.sbuslab.sbus.auth.AuthProviderImpl;
 import com.sbuslab.sbus.auth.DynamicAuthConfigProvider;
@@ -144,24 +141,15 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {
-            ProxyServer.Builder proxyServerBuilder = new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
-                .setProxyType(ProxyType.HTTP);
-            List<String> nonProxyHostList = parseNonProxyHostsConfig(conf.getString("proxy.nonproxy-hosts"));
-            proxyServerBuilder.setNonProxyHosts(nonProxyHostList);
-            ProxyServer proxyServer = proxyServerBuilder.build();
-            bldr.setProxyServer(proxyServer);
+            bldr.setProxyServer(
+                new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
+                    .setProxyType(ProxyType.HTTP)
+                    .setNonProxyHosts(conf.getStringList("proxy.non-proxy-hosts"))
+                    .build()
+            );
         }
 
         return Dsl.asyncHttpClient(bldr);
-    }
-
-    private static List<String> parseNonProxyHostsConfig(String nonProxyHosts){
-        if(!StringUtils.hasLength(nonProxyHosts)) {
-            return Collections.emptyList();
-        }
-        String[] nonProxyHostsArray = nonProxyHosts.split("\\|");
-        List<String> nonProxyHostList= Arrays.stream(nonProxyHostsArray).map(host -> host.trim()).collect(Collectors.toList());
-        return nonProxyHostList;
     }
 
     @Bean

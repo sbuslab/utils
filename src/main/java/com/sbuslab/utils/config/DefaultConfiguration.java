@@ -53,7 +53,9 @@ import org.springframework.context.event.EventListener;
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.scheduler.ScheduleCommand;
-import com.sbuslab.sbus.*;
+import com.sbuslab.sbus.Context;
+import com.sbuslab.sbus.Transport;
+import com.sbuslab.sbus.TransportDispatcher;
 import com.sbuslab.sbus.auth.AuthProvider;
 import com.sbuslab.sbus.auth.AuthProviderImpl;
 import com.sbuslab.sbus.auth.DynamicAuthConfigProvider;
@@ -139,8 +141,12 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             .setFollowRedirect(conf.getBoolean("follow-redirect"));
 
         if (!conf.getString("proxy.host").isEmpty()) {
-            bldr.setProxyServer(new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
-                .setProxyType(ProxyType.HTTP));
+            bldr.setProxyServer(
+                new ProxyServer.Builder(conf.getString("proxy.host"), conf.getInt("proxy.port"))
+                    .setProxyType(ProxyType.HTTP)
+                    .setNonProxyHosts(conf.getStringList("proxy.non-proxy-hosts"))
+                    .build()
+            );
         }
 
         return Dsl.asyncHttpClient(bldr);

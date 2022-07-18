@@ -2,12 +2,11 @@ package com.sbuslab.utils
 
 import com.sbuslab.model.scheduler.ScheduleCommand
 import com.sbuslab.sbus.Sbus
-import org.springframework.beans.factory.annotation.Autowired
 
 trait Scheduling {
 
-  @Autowired
-  val sbus: Sbus = null;
+
+  def sbus: Sbus
 
   def schedule(routingKey: String, period: Long, body: Option[Any] = Option.empty, scheduleId: Option[String] = Option.empty): Unit = {
     val context = sbus.sign(routingKey, body)

@@ -18,10 +18,6 @@ java {
     withSourcesJar()
 }
 
-signing {
-    sign publishing.publications.mavenJava
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -68,16 +64,22 @@ publishing {
         }
     }
 
-    repositories {
-        maven {
-            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+    if (project.findProperty('publishSonatype')) {
+        repositories {
+            maven {
+                url = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
 
-            credentials {
-                username = project.findProperty('nexusUsername') ?: ''
-                password = project.findProperty('nexusPassword') ?: ''
+                credentials {
+                    username = project.findProperty('nexusUsername') ?: ''
+                    password = project.findProperty('nexusPassword') ?: ''
+                }
             }
         }
     }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }
 
 dependencies {

@@ -10,7 +10,7 @@ trait SchedulerSupport {
 
   implicit class SbusSchedulerSupport(sbus: Sbus) {
 
-    def schedule(routingKey: String, period: Long = null, body: Any = null, scheduleId: String = null, atTime: Long = null): Future[Unit] = {
+    def schedule(routingKey: String, period: java.lang.Long = null, body: Any = null, scheduleId: String = null, atTime: java.lang.Long = null): Future[Unit] = {
       val context = sbus.sign(routingKey, body)
 
       sbus.command("scheduler.schedule", ScheduleCommand.builder

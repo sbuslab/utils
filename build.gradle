@@ -1,14 +1,6 @@
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-}
-
 plugins {
-    id 'io.codearte.nexus-staging' version '0.30.0' apply false
-    id "maven-publish"
+    id 'maven-publish'
+    id 'signing'
 }
 
 apply plugin: 'scala'
@@ -21,20 +13,13 @@ repositories {
     mavenCentral()
 }
 
-if (this.parent == null) {
-    apply plugin: 'io.codearte.nexus-staging'
-    apply plugin: 'maven-publish'
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
-    nexusStaging {
-        packageGroup = 'com.sbuslab'
-        stagingProfileId = '3eeedfb73a4d9e'
-        numberOfRetries = 100
-        delayBetweenRetriesInMillis = 5000
-    }
-
-    test {
-        testLogging.showStandardStreams = true
-    }
+signing {
+    sign publishing.publications.mavenJava
 }
 
 publishing {
@@ -42,6 +27,7 @@ publishing {
         mavenJava(MavenPublication) {
             artifactId = 'utils'
             from components.java
+
             versionMapping {
                 usage('java-api') {
                     fromResolutionOf('runtimeClasspath')
@@ -50,6 +36,7 @@ publishing {
                     fromResolutionResult()
                 }
             }
+
             pom {
                 name = 'utils'
                 description = 'Common utils for sbus'
@@ -80,18 +67,17 @@ publishing {
             }
         }
     }
-//    repositories {
-//        maven {
-//            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-//            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-//            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-//
-//            credentials {
-//                username = project.findProperty('nexusUsername') ?: ''
-//                password = project.findProperty('nexusPassword') ?: ''
-//            }
-//        }
-//    }
+
+    repositories {
+        maven {
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+
+            credentials {
+                username = project.findProperty('nexusUsername') ?: ''
+                password = project.findProperty('nexusPassword') ?: ''
+            }
+        }
+    }
 }
 
 dependencies {

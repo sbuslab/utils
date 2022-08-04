@@ -36,7 +36,7 @@ public class DbMigration {
                 .outOfOrder(true);
 
             if (conf.hasPath("locations")) {
-                flywayConf.locations(conf.getString("locations"));
+                flywayConf.locations(conf.getStringList("locations").toArray(String[]::new));
             }
 
             if (conf.hasPath("table")) {

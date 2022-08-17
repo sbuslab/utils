@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import scala.Option;
 import scala.compat.java8.FutureConverters;
@@ -27,7 +26,6 @@ import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
-import net.spy.memcached.*;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Dsl;
@@ -46,6 +44,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -71,9 +70,11 @@ import com.sbuslab.utils.json.JsonMapperFactory;
 
 
 @ComponentScan("com.sbuslab")
+@Import(MemcachedConfiguration.class)
 @EnableAspectJAutoProxy
 public abstract class DefaultConfiguration implements ApplicationContextAware {
 
+    public static final boolean DISABLED_MEMOIZE_CACHE = "true".equals(System.getenv("DISABLED_MEMOIZE_CACHE"));
     protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
     private static ApplicationContext context;
 
@@ -150,24 +151,6 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         }
 
         return Dsl.asyncHttpClient(bldr);
-    }
-
-    @Bean
-    @Lazy
-    public MemcachedClient getMemcachedClient(Config config) throws IOException {
-        Config conf = config.getConfig("sbuslab.memcache");
-
-        ConnectionFactoryBuilder builder = new ConnectionFactoryBuilder()
-            .setDaemon(true)
-            .setShouldOptimize(true)
-            .setFailureMode(FailureMode.Redistribute)
-            .setHashAlg(DefaultHashAlgorithm.KETAMA_HASH)
-            .setLocatorType(ConnectionFactoryBuilder.Locator.CONSISTENT)
-            .setOpTimeout(conf.getDuration("timeout", TimeUnit.MILLISECONDS))
-            .setMaxReconnectDelay(conf.getDuration("max-reconnect-delay", TimeUnit.SECONDS))
-            .setProtocol(ConnectionFactoryBuilder.Protocol.BINARY);
-
-        return new MemcachedClient(builder.build(), AddrUtil.getAddresses(conf.getStringList("hosts")));
     }
 
     @Bean
@@ -356,4 +339,5 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext ac) throws BeansException {
         context = ac;
     }
+
 }

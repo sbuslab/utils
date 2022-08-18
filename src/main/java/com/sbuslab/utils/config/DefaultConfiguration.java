@@ -319,7 +319,10 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
 
                         AuthProvider authProvider = appContext.getBean(AuthProvider.class);
 
-                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(routingKey), Option.empty());
+                        String[] split = routingKey.split(":", 2);
+                        String realRoutingKey = split[split.length - 1];
+
+                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), Option.empty());
 
                         sbus.command("scheduler.schedule", ScheduleCommand.builder()
                             .period(FiniteDuration.apply(schedule.value()).toMillis())

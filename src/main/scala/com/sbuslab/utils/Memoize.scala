@@ -6,13 +6,14 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
+import com.sbuslab.utils.config.DefaultConfiguration
 
 trait Memoize {
 
   case class CachedObject(expiredAt: Long, obj: Any)
 
   private val memoizeCache = new ConcurrentHashMap[String, CachedObject]()
-  private val disabledMemoizeCache = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+  private val disabledMemoizeCache = DefaultConfiguration.DISABLED_MEMOIZE_CACHE
 
   private val fallbackMaxTtl = 1.day
 

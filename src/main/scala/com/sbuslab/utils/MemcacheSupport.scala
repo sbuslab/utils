@@ -6,13 +6,13 @@ import scala.concurrent.duration._
 import scala.util.{Success, Try}
 import scala.util.control.NonFatal
 
+import com.sbuslab.utils.config.DefaultConfiguration
 import net.spy.memcached.internal._
 import net.spy.memcached.MemcachedClient
 
-
 trait MemcacheSupport {
 
-  protected val disabledMemoizeMemcached = sys.env.getOrElse("DISABLED_MEMOIZE_CACHE", "false") == "true"
+  protected val disabledMemoizeMemcached = DefaultConfiguration.DISABLED_MEMOIZE_CACHE
 
   private val cacheLoading = new ConcurrentHashMap[String, Future[Any]]()
 

@@ -25,20 +25,24 @@ import com.sbuslab.utils.config.memcached.NoopConnectionFactory;
 @Configuration
 public abstract class MemcachedConfiguration {
 
+    private static final String MEMCACHE_ROOT_CONFIG_PATH = "sbuslab.memcache";
+    private static final String ENABLED_CONFIG_PATH = "enabled";
+    public static final String MEMCACHE_ENABLED_CONFIG_PATH = MEMCACHE_ROOT_CONFIG_PATH + "." + ENABLED_CONFIG_PATH;
     private static final Logger LOG = LoggerFactory.getLogger(MemcachedConfiguration.class);
 
     @Bean
     @Lazy
     public MemcachedClient getMemcachedClient(Config config) throws IOException {
-        final Config memcacheConfig = config.getConfig("sbuslab.memcache");
+        final Config memcacheConfig = config.getConfig(MEMCACHE_ROOT_CONFIG_PATH);
+        final boolean memcacheEnabled = memcacheConfig.getBoolean(ENABLED_CONFIG_PATH);
         final ConnectionFactory cf;
         final List<String> hosts;
-        if (DefaultConfiguration.DISABLED_MEMOIZE_CACHE) {
-            LOG.info("Caching is disabled.");
+        if (!memcacheEnabled) {
+            LOG.info("Memcache is disabled.");
             cf = new NoopConnectionFactory();
             hosts = Collections.singletonList("127.0.0.1:11211");
         } else {
-            LOG.info("Caching is enabled.");
+            LOG.info("Memcache is enabled.");
             cf = new ConnectionFactoryBuilder()
                     .setDaemon(true)
                     .setShouldOptimize(true)

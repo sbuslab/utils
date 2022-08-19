@@ -31,6 +31,7 @@ public class MemcachedConfigurationTest {
             return ConfigFactory.parseMap(
                     Map.of("sbuslab", Map.of(
                             "memcache", Map.of(
+                                    "enabled", false,
                                     "timeout", 1000000,
                                     "max-reconnect-delay", 1000000,
                                     "hosts", List.of("1.2.3.4:11211")))));

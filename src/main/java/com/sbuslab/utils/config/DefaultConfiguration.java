@@ -51,6 +51,7 @@ import org.springframework.context.event.EventListener;
 
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
+import com.sbuslab.model.Message;
 import com.sbuslab.model.scheduler.ScheduleCommand;
 import com.sbuslab.sbus.Context;
 import com.sbuslab.sbus.Transport;
@@ -322,7 +323,7 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
                         String[] split = routingKey.split(":", 2);
                         String realRoutingKey = split[split.length - 1];
 
-                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), Option.empty());
+                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), new Message(realRoutingKey, null));
 
                         sbus.command("scheduler.schedule", ScheduleCommand.builder()
                             .period(FiniteDuration.apply(schedule.value()).toMillis())

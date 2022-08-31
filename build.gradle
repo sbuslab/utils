@@ -111,11 +111,7 @@ dependencies {
 
     api 'org.postgresql:postgresql:42.4.2'
 
-    api('org.asynchttpclient:async-http-client:2.12.3') {
-        exclude group: 'io.netty', module: 'netty-codec'
-    }
-
-    api 'io.netty:netty-codec:4.1.78.Final'
+    api('org.asynchttpclient:async-http-client:2.12.3')
 
     api 'org.slf4j:slf4j-api:1.7.36'
     api 'ch.qos.logback:logback-classic:1.2.11'
@@ -142,4 +138,15 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-test:2.7.0'
     testImplementation 'org.springframework:spring-test:5.3.20'
 
+    constraints {
+        api('org.eclipse.jetty:jetty-bom:9.4.48.v20220622') {
+            because 'https://security.snyk.io/vuln/SNYK-JAVA-ORGECLIPSEJETTY-2945454 com.github.tomakehurst:wiremock-jre8:2.33.2'
+        }
+        api('org.yaml:snakeyaml:1.31') {
+            because 'https://security.snyk.io/vuln/SNYK-JAVA-ORGYAML-2806360 com.github.tomakehurst:wiremock-jre8:2.33.2'
+        }
+        api('io.netty:netty-codec:4.1.71.Final') {
+            because 'https://security.snyk.io/vuln/SNYK-JAVA-IONETTY-2314893 org.asynchttpclient:async-http-client@2.12.3'
+        }
+    }
 }

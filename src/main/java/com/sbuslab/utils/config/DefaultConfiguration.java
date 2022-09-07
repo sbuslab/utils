@@ -164,9 +164,11 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             .withVerifyPeer(false)
             .build();
 
-        if (conf.hasPath("user") && conf.hasPath("password")) {
-            redisURI.setUsername(conf.getString("user"));
+        if (conf.hasPath("password")) {
             redisURI.setPassword(conf.getString("password").toCharArray());
+        }
+        if (conf.hasPath("user")) {
+            redisURI.setUsername(conf.getString("user"));
         }
 
         RedisClusterClient clusterClient = RedisClusterClient.create(redisURI);

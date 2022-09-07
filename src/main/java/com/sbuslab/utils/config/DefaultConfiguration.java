@@ -159,18 +159,20 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     public static StatefulRedisClusterConnection<String, String> getRedisClient(Config config) {
         Config conf = config.getConfig("sbuslab.redis");
 
-        final int port = conf.hasPath("port") ? conf.getInt("port") : 6379;
         RedisURI redisURI = RedisURI.Builder.redis(conf.getString("host"))
-            .withPort(port)
+            .withPort(conf.getInt("port"))
             .withSsl(conf.getBoolean("ssl"))
             .withVerifyPeer(false)
             .build();
 
-        if (conf.hasPath("password")) {
-            redisURI.setPassword(conf.getString("password").toCharArray());
+        final String password = conf.getString("password");
+        if (!password.isEmpty()) {
+            redisURI.setPassword(password.toCharArray());
         }
-        if (conf.hasPath("user")) {
-            redisURI.setUsername(conf.getString("user"));
+
+        final String user = conf.getString("user");
+        if (!user.isEmpty()) {
+            redisURI.setUsername(user);
         }
 
         RedisClusterClient clusterClient = RedisClusterClient.create(redisURI);

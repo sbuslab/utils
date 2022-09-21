@@ -23,4 +23,5 @@
   <logger name="org.hibernate" level="INFO"/>
   <logger name="general" level="ERROR"/>
   <logger name="org.web3j.protocol" level="INFO"/>
+  <logger name="io.lettuce" level="INFO"/>
 </included>

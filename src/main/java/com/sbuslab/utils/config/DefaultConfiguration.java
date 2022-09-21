@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import scala.Option;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
@@ -19,6 +18,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import io.lettuce.core.RedisURI;
@@ -41,11 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
@@ -182,19 +178,19 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
 
     @Bean
     @Lazy
-    public DynamicAuthConfigProvider dynamicAuthConfigProvider(Config config, ObjectMapper objectMapper) {
+    public DynamicAuthConfigProvider dynamicAuthConfigProvider(Config config) {
         return config.getBoolean("sbus.auth.consul.enabled")
-            ? new ConsulAuthConfigProvider(config.getConfig("sbus.auth.consul"), objectMapper)
+            ? new ConsulAuthConfigProvider(config.getConfig("sbus.auth.consul"))
             : new NoopDynamicProvider();
     }
 
     @Bean
     @Lazy
-    public AuthProvider authProvider(Config config, ObjectMapper objectMapper, DynamicAuthConfigProvider dynamicProvider) {
+    public AuthProvider authProvider(Config config, DynamicAuthConfigProvider dynamicProvider) {
         return config.getBoolean("sbus.auth.enabled")
                && !config.getString("sbus.auth.name").isBlank()
                && !config.getString("sbus.auth.private-key").isBlank()
-            ? new AuthProviderImpl(config.getConfig("sbus.auth"), objectMapper, dynamicProvider)
+            ? new AuthProviderImpl(config.getConfig("sbus.auth"), dynamicProvider)
             : new NoopAuthProvider();
     }
 
@@ -224,18 +220,18 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
 
     @Bean
     @Lazy
-    public Sbus getJavaSbus(Transport transport, AuthProvider authProvider) {
-        return new Sbus(transport, authProvider);
+    public Sbus getJavaSbus(Transport transport, AuthProvider authProvider, ObjectMapper objectMapper) {
+        return new Sbus(transport, authProvider, objectMapper);
     }
 
     @Bean
     @Lazy
-    public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, AuthProvider authProvider, ExecutionContext ec) {
-        return new com.sbuslab.sbus.Sbus(transport, authProvider, ec);
+    public com.sbuslab.sbus.Sbus getScalaSbus(Transport transport, AuthProvider authProvider, ExecutionContext ec, ObjectMapper objectMapper) {
+        return new com.sbuslab.sbus.Sbus(transport, authProvider, objectMapper, ec);
     }
 
     @Bean
-    public static Reflections initSbusSubscriptions(ApplicationContext appContext, Config config) {
+    public static Reflections initSbusSubscriptions(ApplicationContext appContext, Config config, ObjectMapper mapper) {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
 
@@ -322,21 +318,33 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
                     });
 
                     if (method.isAnnotationPresent(Schedule.class)) {
-                        Schedule schedule = method.getAnnotation(Schedule.class);
+                        try {
+                            Schedule schedule = method.getAnnotation(Schedule.class);
 
-                        AuthProvider authProvider = appContext.getBean(AuthProvider.class);
+                            AuthProvider authProvider = appContext.getBean(AuthProvider.class);
 
-                        String[] split = routingKey.split(":", 2);
-                        String realRoutingKey = split[split.length - 1];
+                            String[] split = routingKey.split(":", 2);
+                            String realRoutingKey = split[split.length - 1];
 
-                        Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), new Message(realRoutingKey, null));
+                            byte[] cmd = mapper.writeValueAsBytes(new Message(realRoutingKey, null));
 
-                        sbus.command("scheduler.schedule", ScheduleCommand.builder()
-                            .period(FiniteDuration.apply(schedule.value()).toMillis())
-                            .routingKey(routingKey)
-                            .origin(signedContext.origin())
-                            .signature(signedContext.signature())
-                            .build());
+                            Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), cmd);
+
+                            sbus.command("scheduler.schedule", ScheduleCommand.builder()
+                                .period(FiniteDuration.apply(schedule.value()).toMillis())
+                                .routingKey(routingKey)
+                                .origin(signedContext.origin())
+                                .signature(signedContext.signature())
+                                .build());
+                        } catch (JsonProcessingException e) {
+                            Throwable cause = e.getCause();
+
+                            if (cause instanceof ErrorMessage) {
+                                throw (ErrorMessage) e.getCause();
+                            } else {
+                                throw new RuntimeException(cause != null ? cause : e);
+                            }
+                        }
                     }
                 }
             });

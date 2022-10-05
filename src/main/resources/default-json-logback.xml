@@ -28,7 +28,8 @@
 
   <include resource="logback-logger-excludes.xml" />
 
-  <root level="TRACE">
+  <variable name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-TRACE}" />
+  <root level="${ROOT_LOG_LEVEL}">
     <appender-ref ref="STDOUT"/>
     <appender-ref ref="METRICS"/>
   </root>

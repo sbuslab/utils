@@ -1,5 +1,6 @@
 package com.sbuslab.utils.config;
 
+import javax.annotation.PostConstruct;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -63,6 +64,7 @@ import com.sbuslab.sbus.kafka.KafkaTransport;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
 import com.sbuslab.utils.Schedule;
 import com.sbuslab.utils.Subscribe;
+import com.sbuslab.utils.config.logger.LoggerConfigurationParser;
 import com.sbuslab.utils.json.JsonMapperFactory;
 
 
@@ -112,14 +114,12 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
 
     @EventListener({ContextRefreshedEvent.class})
     public void reconfigureLoggers(ContextRefreshedEvent event) {
-        Config config = event.getApplicationContext().getBean(Config.class);
-        config.getObject("sbuslab.loggers").forEach((key, value) -> {
-            Logger logger = LoggerFactory.getLogger(key);
+        reconfigureLoggers(event.getApplicationContext().getBean(Config.class));
+    }
 
-            if (logger instanceof ch.qos.logback.classic.Logger) {
-                ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(value.atPath("/").getString("/"), Level.INFO));
-            }
-        });
+    @PostConstruct
+    public void init() {
+        reconfigureLoggers(getConfig());
     }
 
     @Bean
@@ -356,6 +356,15 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext ac) throws BeansException {
         context = ac;
+    }
+
+    private void reconfigureLoggers(Config config) {
+        LoggerConfigurationParser.parseLoggersConfiguration(config).forEach(loggerConfigData -> {
+            Logger logger = LoggerFactory.getLogger(loggerConfigData.getLoggerName());
+            if (logger instanceof ch.qos.logback.classic.Logger) {
+                ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(loggerConfigData.getLogLevel(), Level.INFO));
+            }
+        });
     }
 
 }

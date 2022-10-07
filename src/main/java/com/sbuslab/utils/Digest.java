@@ -97,6 +97,10 @@ public class Digest {
         return Base64.encodeBase64String(data);
     }
 
+    public static String encodeBase64UrlSafe(final byte[] data) {
+        return Base64.encodeBase64URLSafeString(data);
+    }
+
     public static byte[] decodeBase64(final String data) {
         return Base64.decodeBase64(data);
     }

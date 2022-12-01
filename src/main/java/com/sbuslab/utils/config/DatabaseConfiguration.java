@@ -2,9 +2,7 @@ package com.sbuslab.utils.config;
 
 import javax.sql.DataSource;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import com.typesafe.config.Config;
 import com.zaxxer.hikari.HikariConfig;
@@ -14,6 +12,8 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -115,7 +115,7 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
 
     @Bean
     @DependsOn("dbMigrations")
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource datasource, @Autowired(required = false) HibernatePropertiesCustomizer customizer) {
         Config dbConfig = getDbConfig();
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
@@ -123,6 +123,11 @@ public abstract class DatabaseConfiguration extends DefaultConfiguration {
         Properties props = new Properties();
         Config hibernateConfig = dbConfig.getConfig("hibernate");
         hibernateConfig.entrySet().forEach(entry -> props.put(entry.getKey(), entry.getValue().unwrapped()));
+        if (customizer != null) {
+            Map<String, Object> customProps = new HashMap<>();
+            customizer.customize(customProps);
+            props.putAll(customProps);
+        }
 
         factory.setPackagesToScan(dbConfig.getStringList("packages-to-scan").toArray(new String[0]));
         factory.setJpaProperties(props);

@@ -1,25 +1,12 @@
 package com.sbuslab.utils.config;
 
 import javax.annotation.PostConstruct;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import io.lettuce.core.RedisURI;
@@ -32,11 +19,6 @@ import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Dsl;
 import org.asynchttpclient.proxy.ProxyServer;
 import org.asynchttpclient.proxy.ProxyType;
-import org.reflections.Reflections;
-import org.reflections.scanners.MethodAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -46,11 +28,6 @@ import org.springframework.context.annotation.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
-import com.sbuslab.model.BadRequestError;
-import com.sbuslab.model.ErrorMessage;
-import com.sbuslab.model.Message;
-import com.sbuslab.model.scheduler.ScheduleCommand;
-import com.sbuslab.sbus.Context;
 import com.sbuslab.sbus.Transport;
 import com.sbuslab.sbus.TransportDispatcher;
 import com.sbuslab.sbus.auth.AuthProvider;
@@ -62,9 +39,8 @@ import com.sbuslab.sbus.auth.providers.NoopDynamicProvider;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.sbus.kafka.KafkaTransport;
 import com.sbuslab.sbus.rabbitmq.RabbitMqTransport;
-import com.sbuslab.utils.Schedule;
-import com.sbuslab.utils.Subscribe;
 import com.sbuslab.utils.config.logger.LoggerConfigurationParser;
+import com.sbuslab.utils.config.support.SubscribeBeanPostProcessor;
 import com.sbuslab.utils.json.JsonMapperFactory;
 
 
@@ -231,126 +207,8 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     }
 
     @Bean
-    public static Reflections initSbusSubscriptions(ApplicationContext appContext, Config config, ObjectMapper mapper) {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            Validator validator = factory.getValidator();
-
-            String packageToScan = config.getString("sbus.package-to-scan");
-
-            Reflections reflections = new Reflections(
-                new ConfigurationBuilder()
-                    .setUrls(ClasspathHelper.forPackage(packageToScan))
-                    .filterInputsBy(new FilterBuilder().includePackage(packageToScan))
-                    .setScanners(new MethodAnnotationsScanner()));
-
-            reflections.getMethodsAnnotatedWith(Subscribe.class).forEach(method -> {
-                if (method.getDeclaringClass().isInterface()) {
-                    return; // skip interfaces without implementations
-                }
-
-                Sbus sbus = appContext.getBean(Sbus.class);
-                Object parent = appContext.getBean(method.getDeclaringClass());
-                Subscribe ann = method.getAnnotation(Subscribe.class);
-
-                boolean featured = CompletableFuture.class.isAssignableFrom(method.getReturnType());
-                boolean scalaFeatured = !featured && Future.class.isAssignableFrom(method.getReturnType());
-
-                if (method.getParameterCount() != 2 || !Context.class.isAssignableFrom(method.getParameterTypes()[1])) {
-                    throw new RuntimeException("Method with @Subscribe must have second argument Context! " + method);
-                }
-
-                String[] routingKeys = ann.values().length > 0 ? ann.values() : new String[]{ann.value()};
-
-                for (String routingKey : routingKeys) {
-                    sbus.on(routingKey, method.getParameterTypes()[0], (req, ctx) -> {
-                        if (req != null) {
-                            Set<? extends ConstraintViolation<?>> errors = new HashSet<>();
-
-                            try {
-                                errors = validator.validate(req);
-                            } catch (ArrayIndexOutOfBoundsException ignored) {
-                            }
-
-                            if (!errors.isEmpty()) {
-                                BadRequestError ex = new BadRequestError(errors.stream().map(e ->
-                                    e.getPropertyPath() + " in " + e.getRootBeanClass().getSimpleName() + " " + e.getMessage()
-                                ).collect(Collectors.joining("; \n")), null, "validation-error");
-
-                                log.error("Sbus validation error: " + ex.getMessage(), ex);
-
-                                throw ex;
-                            }
-                        }
-
-                        if (featured || scalaFeatured) {
-                            try {
-                                if (scalaFeatured) {
-                                    return FutureConverters
-                                        .toJava((Future<?>) method.invoke(parent, req, ctx))
-                                        .toCompletableFuture();
-                                } else {
-                                    return (CompletableFuture<?>) method.invoke(parent, req, ctx);
-                                }
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                Throwable cause = e.getCause();
-
-                                if (cause instanceof ErrorMessage) {
-                                    throw (ErrorMessage) e.getCause();
-                                } else {
-                                    throw new RuntimeException(cause != null ? cause : e);
-                                }
-                            }
-                        }
-
-                        return CompletableFuture.supplyAsync(() -> {
-                            try {
-                                return method.invoke(parent, req, ctx);
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                Throwable cause = e.getCause();
-
-                                if (cause instanceof ErrorMessage) {
-                                    throw (ErrorMessage) e.getCause();
-                                } else {
-                                    throw new RuntimeException(cause != null ? cause : e);
-                                }
-                            }
-                        });
-                    });
-
-                    if (method.isAnnotationPresent(Schedule.class)) {
-                        try {
-                            Schedule schedule = method.getAnnotation(Schedule.class);
-
-                            AuthProvider authProvider = appContext.getBean(AuthProvider.class);
-
-                            String[] split = routingKey.split(":", 2);
-                            String realRoutingKey = split[split.length - 1];
-
-                            byte[] cmd = mapper.writeValueAsBytes(new Message(realRoutingKey, null));
-
-                            Context signedContext = authProvider.signCommand(Context.empty().withRoutingKey(realRoutingKey), cmd);
-
-                            sbus.command("scheduler.schedule", ScheduleCommand.builder()
-                                .period(FiniteDuration.apply(schedule.value()).toMillis())
-                                .routingKey(routingKey)
-                                .origin(signedContext.origin())
-                                .signature(signedContext.signature())
-                                .build());
-                        } catch (JsonProcessingException e) {
-                            Throwable cause = e.getCause();
-
-                            if (cause instanceof ErrorMessage) {
-                                throw (ErrorMessage) e.getCause();
-                            } else {
-                                throw new RuntimeException(cause != null ? cause : e);
-                            }
-                        }
-                    }
-                }
-            });
-
-            return reflections;
-        }
+    public SubscribeBeanPostProcessor getSubscribeBeanPostProcessor(Sbus sbus, ObjectMapper objectMapper, AuthProvider authProvider) {
+        return new SubscribeBeanPostProcessor(sbus, objectMapper, authProvider);
     }
 
     @Override

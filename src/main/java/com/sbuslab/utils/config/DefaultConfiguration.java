@@ -1,13 +1,19 @@
 package com.sbuslab.utils.config;
 
 import javax.annotation.PostConstruct;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.Map;
 import scala.concurrent.ExecutionContext;
 
 import akka.actor.ActorSystem;
 import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpsConfigurator;
 import com.typesafe.config.Config;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -79,9 +85,21 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
             log.info("Start prometheus HTTPServer on {}", conf.getInt("port"));
 
             DefaultExports.initialize();
+            HTTPServer.Builder httpServerBuilder = new HTTPServer.Builder()
+                    .withPort(conf.getInt("port"));
+
+            var sslConfig = conf.getConfig("ssl");
+            if (sslConfig.getBoolean("enabled")) {
+                try {
+                    httpServerBuilder.withHttpsConfigurator(new HttpsConfigurator(getSSLContext(sslConfig)));
+                } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException
+                         | IOException | KeyManagementException e ) {
+                    log.error("Failed to configure ssl context for prometheus endpoint", e);
+                }
+            }
 
             try {
-                new HTTPServer(conf.getInt("port"));
+                httpServerBuilder.build();
             } catch (IOException e) {
                 log.error("Error on start prometheus HTTPServer: " + e.getMessage(), e);
             }
@@ -223,6 +241,24 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
                 ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(loggerConfigData.getLogLevel(), Level.INFO));
             }
         });
+    }
+
+    private SSLContext getSSLContext(Config sslConfig) throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, CertificateException, IOException {
+        char[] password = sslConfig.getString("keystore-pass").toCharArray();
+
+        var ks = KeyStore.getInstance("PKCS12");
+        var keyStore = getClass().getClassLoader().getResourceAsStream(sslConfig.getString("keystore-path"));
+        ks.load(keyStore, password);
+
+        var keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+        keyManagerFactory.init(ks, password);
+
+        TrustManagerFactory tmf =  TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ks);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+        return sslContext;
     }
 
 }

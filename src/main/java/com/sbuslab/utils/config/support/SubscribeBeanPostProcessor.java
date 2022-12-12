@@ -6,8 +6,10 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -26,6 +28,8 @@ import org.springframework.core.MethodIntrospector;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
+import static java.util.Optional.of;
+
 import com.sbuslab.model.BadRequestError;
 import com.sbuslab.model.ErrorMessage;
 import com.sbuslab.model.Message;
@@ -35,6 +39,7 @@ import com.sbuslab.sbus.auth.AuthProvider;
 import com.sbuslab.sbus.javadsl.Sbus;
 import com.sbuslab.utils.Schedule;
 import com.sbuslab.utils.Subscribe;
+import com.sbuslab.utils.config.ConfigLoader;
 
 
 public class SubscribeBeanPostProcessor implements BeanPostProcessor, Ordered {
@@ -44,12 +49,17 @@ public class SubscribeBeanPostProcessor implements BeanPostProcessor, Ordered {
     private final AuthProvider authProvider;
     private final Validator validator;
 
+    private final String routeBase;
+
     protected final Log logger = LogFactory.getLog(getClass());
 
     public SubscribeBeanPostProcessor(Sbus sbus, ObjectMapper mapper, AuthProvider authProvider) {
         this.sbus = sbus;
         this.mapper = mapper;
         this.authProvider = authProvider;
+        this.routeBase = of(ConfigLoader.INSTANCE)
+            .filter(f -> f.hasPath("sbus.route-base"))
+            .map(m -> m.getString("sbus.route-base")).orElse(null);
 
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             validator = factory.getValidator();
@@ -93,7 +103,14 @@ public class SubscribeBeanPostProcessor implements BeanPostProcessor, Ordered {
         String[] routingKeys = subscribe.values().length > 0 ? subscribe.values() : new String[]{subscribe.value()};
 
         for (String routingKey : routingKeys) {
-            sbus.on(routingKey, method.getParameterTypes()[0], (req, ctx) -> {
+            String enrichedRoutingKey = routingKey;
+            if (!enrichedRoutingKey.contains(".")) {
+                if (routeBase == null) {
+                  throw new RuntimeException(MessageFormat.format("Cannot enrich route: {0} because the sbus.default-route property is not set in application.properties", routingKey));
+                }
+                enrichedRoutingKey = MessageFormat.format("{0}.{1}", routeBase, routingKey);
+            }
+            sbus.on(enrichedRoutingKey, method.getParameterTypes()[0], (req, ctx) -> {
                 if (req != null) {
                     Set<? extends ConstraintViolation<?>> errors = new HashSet<>();
 
@@ -152,7 +169,7 @@ public class SubscribeBeanPostProcessor implements BeanPostProcessor, Ordered {
                 try {
                     Schedule schedule = AnnotatedElementUtils.getMergedAnnotation(method, Schedule.class);
 
-                    String[] split = routingKey.split(":", 2);
+                    String[] split = enrichedRoutingKey.split(":", 2);
                     String realRoutingKey = split[split.length - 1];
 
                     byte[] cmd = mapper.writeValueAsBytes(new Message(realRoutingKey, null));
@@ -161,7 +178,7 @@ public class SubscribeBeanPostProcessor implements BeanPostProcessor, Ordered {
 
                     sbus.command("scheduler.schedule", ScheduleCommand.builder()
                         .period(FiniteDuration.apply(schedule.value()).toMillis())
-                        .routingKey(routingKey)
+                        .routingKey(enrichedRoutingKey)
                         .origin(signedContext.origin())
                         .signature(signedContext.signature())
                         .build());

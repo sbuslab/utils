@@ -24,9 +24,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.EmbeddedValueResolverAware;
 import org.springframework.context.annotation.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertySource;
+import org.springframework.util.StringValueResolver;
 
 import com.sbuslab.sbus.Transport;
 import com.sbuslab.sbus.TransportDispatcher;
@@ -47,11 +52,13 @@ import com.sbuslab.utils.json.JsonMapperFactory;
 @ComponentScan("com.sbuslab")
 @Import(MemcachedConfiguration.class)
 @EnableAspectJAutoProxy
-public abstract class DefaultConfiguration implements ApplicationContextAware {
+public abstract class DefaultConfiguration implements ApplicationContextAware, EmbeddedValueResolverAware {
 
     public static final boolean DISABLED_MEMOIZE_CACHE = "true".equals(System.getenv("DISABLED_MEMOIZE_CACHE"));
     protected static final Logger log = LoggerFactory.getLogger(DefaultConfiguration.class);
     private static ApplicationContext context;
+
+    private StringValueResolver resolver;
 
     @Bean(name = "config")
     public Config getConfigBean() {
@@ -148,8 +155,7 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         }
 
         RedisClusterClient clusterClient = RedisClusterClient.create(redisURI);
-        StatefulRedisClusterConnection<String, String> connection = clusterClient.connect();
-        return connection;
+        return clusterClient.connect();
     }
 
     @Bean
@@ -207,8 +213,22 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
     }
 
     @Bean
+    public PropertySource<Config> propertySource(Config config) {
+        return new ConfigPropertySource("scalaConfig", config);
+    }
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer(PropertySource<Config> propertySource) {
+        PropertySourcesPlaceholderConfigurer ps = new PropertySourcesPlaceholderConfigurer();
+        MutablePropertySources sources = new MutablePropertySources();
+        sources.addFirst(propertySource);
+        ps.setPropertySources(sources);
+        return ps;
+    }
+
+    @Bean
     public SubscribeBeanPostProcessor getSubscribeBeanPostProcessor(Sbus sbus, ObjectMapper objectMapper, AuthProvider authProvider) {
-        return new SubscribeBeanPostProcessor(sbus, objectMapper, authProvider);
+        return new SubscribeBeanPostProcessor(sbus, objectMapper, authProvider, resolver);
     }
 
     @Override
@@ -225,4 +245,8 @@ public abstract class DefaultConfiguration implements ApplicationContextAware {
         });
     }
 
+    @Override
+    public void setEmbeddedValueResolver(StringValueResolver resolver) {
+        this.resolver = resolver;
+    }
 }
